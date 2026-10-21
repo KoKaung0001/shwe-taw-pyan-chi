@@ -4,6 +4,8 @@
   "demo": "Demo mode: simulated data. Do not enter real financial information.",
   "skip": "Skip to content",
   "navigation": "Main navigation",
+  "menu": "Menu",
+  "close": "Close menu",
   "workspace": "WORKSPACE",
   "quickAccess": "Quick access",
   "quickAccessBody": "Open any workspace feature without leaving this app.",
@@ -22,7 +24,6 @@
   "reload": "Reload",
   "footer": "Built for everyday clarity. Synthetic data only.",
   "dismiss": "Dismiss",
-<<<<<<< HEAD
   "landing": {
     "eyebrow": "Simple · Clean · User friendly",
     "heroTitle": "Smarter money management for freelancers & small businesses",
@@ -43,36 +44,52 @@
     "featuresTitle": "Everything you need in one app",
     "featuresDescription": "Simple tools. Powerful insights. Real financial clarity.",
     "features": {
-      "trackFinances": { "title": "Track finances", "description": "See your income, expenses, and payments at a glance." },
-      "smartOcr": { "title": "Smart OCR", "description": "Upload receipts or screenshots and let AI extract the details." },
-      "aiInsights": { "title": "AI insights", "description": "Get useful insights about your spending, patterns, and possible issues." },
-      "aiAssistant": { "title": "AI assistant", "description": "Ask questions about your finances in natural language." },
-      "creditReadiness": { "title": "Credit readiness", "description": "Check your record completeness and know what to prepare." },
-      "simpleFriendly": { "title": "Simple & friendly", "description": "Designed for freelancers and small businesses in Myanmar." }
+      "trackFinances": {
+        "title": "Track finances",
+        "description": "See your income, expenses, and payments at a glance."
+      },
+      "smartOcr": {
+        "title": "Smart OCR",
+        "description": "Upload receipts or screenshots and let AI extract the details."
+      },
+      "aiInsights": {
+        "title": "AI insights",
+        "description": "Get useful insights about your spending, patterns, and possible issues."
+      },
+      "aiAssistant": {
+        "title": "AI assistant",
+        "description": "Ask questions about your finances in natural language."
+      },
+      "creditReadiness": {
+        "title": "Credit readiness",
+        "description": "Check your record completeness and know what to prepare."
+      },
+      "simpleFriendly": {
+        "title": "Simple & friendly",
+        "description": "Designed for freelancers and small businesses in Myanmar."
+      }
     },
     "aboutEyebrow": "About FinMate",
     "aboutTitle": "Built for Myanmar’s freelancers & small businesses",
     "aboutDescription": "Whether you’re a freelancer, gig worker, or small business owner, FinMate helps you stay organized, save time, and make better financial decisions — today and tomorrow.",
     "benefits": {
-      "independence": { "title": "Independence", "description": "Track your personal or business finances." },
-      "growth": { "title": "Growth", "description": "Build better financial habits." },
-      "opportunity": { "title": "Opportunity", "description": "Prepare for future credit and bigger goals." }
+      "independence": {
+        "title": "Independence",
+        "description": "Track your personal or business finances."
+      },
+      "growth": {
+        "title": "Growth",
+        "description": "Build better financial habits."
+      },
+      "opportunity": {
+        "title": "Opportunity",
+        "description": "Prepare for future credit and bigger goals."
+      }
     },
     "ctaTitle": "Ready to take control of your finances?",
     "ctaDescription": "Join freelancers and small businesses who are building a clearer financial future with FinMate.",
     "copyright": "© 2026 FinMate. All rights reserved."
   },
-  "dashboard": {
-    "title": "Your financial picture, in one place.",
-    "nav": "Dashboard",
-    "tab": "Dashboard",
-    "description": "A calm space to understand what comes in, what goes out, and what needs your attention.",
-    "items": [
-      "Recorded available balance and net cash movement",
-      "Reporting periods and income versus expenses",
-      "Outstanding payments and early warnings"
-    ]
-=======
   "form": {
     "amountError": "Enter a whole MMK amount within the supported limit.",
     "cancel": "Cancel",
@@ -128,7 +145,6 @@
     "food": "Food",
     "other-expense": "Other expense",
     "uncategorized": "Uncategorized"
->>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
   },
   "transactions": {
     "title": "Transactions",
@@ -329,13 +345,9 @@
   "settings": {
     "title": "Make a clear starting point",
     "nav": "Settings",
-<<<<<<< HEAD
     "tab": "Profile",
-    "description": "Your demo preferences and opening-balance setup will live here.",
-=======
     "description": "Manage your starting point for recorded balances.",
     "carryForward": "Your recorded available balance carries forward from this reference point as settled transactions are added.",
->>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
     "items": [
       "Opening balance with its reference date and time",
       "Automatic daily carry-forward",

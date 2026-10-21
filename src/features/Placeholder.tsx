@@ -4,6 +4,7 @@ import {
   Check,
   ChartNoAxesCombined,
   Construction,
+  Globe2,
   Heart,
   Leaf,
   LockKeyhole,
@@ -13,8 +14,10 @@ import {
   ShieldCheck,
   Sparkles,
   TrendingUp,
+  Youtube,
   UserRound,
 } from 'lucide-react';
+import type { MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { primaryNavigation, screens, type ScreenId } from '../app/routes';
@@ -38,34 +41,63 @@ const landingBenefits = [
   { icon: Heart, key: 'opportunity' },
 ] as const;
 
+const landingSocialLinks = [
+  { label: 'Facebook', href: 'https://www.facebook.com/', icon: MessageCircle },
+  { label: 'YouTube', href: 'https://www.youtube.com/', icon: Youtube },
+  { label: 'Website', href: 'https://www.finmate.com/', icon: Globe2 },
+] as const;
+
 function LandingPage() {
   const { t } = useTranslation();
 
+  const scrollToSection = (
+    event: MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+  ) => {
+    event.preventDefault();
+    const section = document.getElementById(sectionId);
+    if (section && typeof section.scrollIntoView === 'function') {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="landing-page">
-      <section className="landing-hero" aria-labelledby="landing-title">
+      <section
+        id="landing-hero"
+        className="landing-hero"
+        aria-labelledby="landing-title"
+      >
         <div className="landing-hero-copy">
           <p className="landing-kicker">{t('landing.eyebrow')}</p>
           <h1 id="landing-title" tabIndex={-1}>
             {t('landing.heroTitle')}
           </h1>
-          <p className="landing-hero-description">{t('landing.heroDescription')}</p>
+          <p className="landing-hero-description">
+            {t('landing.heroDescription')}
+          </p>
           <div className="landing-actions">
-            <Link className="landing-primary-button" to="/transactions">
+            <Link className="landing-primary-button" to="/dashboard">
               <span>{t('landing.getStarted')}</span>
               <ArrowRight size={17} aria-hidden="true" />
             </Link>
-            <Link className="landing-secondary-button" to="/insights">
+            <a
+              className="landing-secondary-button"
+              href="#landing-features"
+              onClick={(event) => scrollToSection(event, 'landing-features')}
+            >
               <PlayCircle size={17} aria-hidden="true" />
               <span>{t('landing.watchDemo')}</span>
-            </Link>
+            </a>
           </div>
         </div>
 
         <div className="landing-preview" aria-label={t('landing.previewLabel')}>
           <div className="landing-preview-header">
             <span className="landing-preview-brand">
-              <span className="landing-preview-leaf" aria-hidden="true"><Leaf size={17} /></span>
+              <span className="landing-preview-leaf" aria-hidden="true">
+                <Leaf size={17} />
+              </span>
               {t('brand')}
             </span>
             <span className="landing-preview-dot" aria-hidden="true" />
@@ -84,11 +116,19 @@ function LandingPage() {
             <span style={{ height: '70%' }} />
           </div>
           <div className="landing-preview-legend">
-            <span><i className="landing-legend-dot is-income" />{t('landing.income')}</span>
-            <span><i className="landing-legend-dot is-expense" />{t('landing.expenses')}</span>
+            <span>
+              <i className="landing-legend-dot is-income" />
+              {t('landing.income')}
+            </span>
+            <span>
+              <i className="landing-legend-dot is-expense" />
+              {t('landing.expenses')}
+            </span>
           </div>
           <div className="landing-preview-card">
-            <span className="landing-preview-card-icon"><Sparkles size={14} aria-hidden="true" /></span>
+            <span className="landing-preview-card-icon">
+              <Sparkles size={14} aria-hidden="true" />
+            </span>
             <span>
               <strong>{t('landing.previewInsight')}</strong>
               <small>{t('landing.previewInsightBody')}</small>
@@ -97,20 +137,41 @@ function LandingPage() {
         </div>
 
         <div className="landing-trust-row" aria-label={t('landing.trustLabel')}>
-          <span><LockKeyhole size={14} aria-hidden="true" />{t('landing.secure')}</span>
-          <span><Sparkles size={14} aria-hidden="true" />{t('landing.easy')}</span>
-          <span><Heart size={14} aria-hidden="true" />{t('landing.myanmar')}</span>
+          <span>
+            <LockKeyhole size={14} aria-hidden="true" />
+            {t('landing.secure')}
+          </span>
+          <span>
+            <Sparkles size={14} aria-hidden="true" />
+            {t('landing.easy')}
+          </span>
+          <span>
+            <Heart size={14} aria-hidden="true" />
+            {t('landing.myanmar')}
+          </span>
         </div>
       </section>
 
-      <section className="landing-section landing-features" aria-labelledby="features-title">
+      <section
+        id="landing-features"
+        className="landing-section landing-features"
+        aria-labelledby="features-title"
+      >
         <p className="landing-kicker">{t('landing.featuresEyebrow')}</p>
         <h2 id="features-title">{t('landing.featuresTitle')}</h2>
-        <p className="landing-section-description">{t('landing.featuresDescription')}</p>
+        <p className="landing-section-description">
+          {t('landing.featuresDescription')}
+        </p>
         <div className="landing-feature-grid">
           {landingFeatures.map(({ route, icon: Icon, key }) => (
-            <Link key={route} to={route} className={`landing-feature-card feature-${key}`}>
-              <span className="landing-feature-icon"><Icon size={20} aria-hidden="true" /></span>
+            <Link
+              key={route}
+              to={route}
+              className={`landing-feature-card feature-${key}`}
+            >
+              <span className="landing-feature-icon">
+                <Icon size={20} aria-hidden="true" />
+              </span>
               <span className="landing-feature-copy">
                 <strong>{t(`landing.features.${key}.title`)}</strong>
                 <small>{t(`landing.features.${key}.description`)}</small>
@@ -121,45 +182,101 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="landing-section landing-about" aria-labelledby="about-title">
+      <section
+        id="landing-about"
+        className="landing-section landing-about"
+        aria-labelledby="about-title"
+      >
         <div className="landing-about-illustration" aria-hidden="true">
           <div className="landing-sun" />
-          <div className="landing-plant landing-plant-left"><span /><span /><span /></div>
+          <div className="landing-plant landing-plant-left">
+            <span />
+            <span />
+            <span />
+          </div>
           <div className="landing-person">
             <div className="landing-person-head" />
             <div className="landing-person-body" />
             <div className="landing-laptop" />
           </div>
           <div className="landing-cup" />
-          <div className="landing-plant landing-plant-right"><span /><span /><span /></div>
+          <div className="landing-plant landing-plant-right">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
         <div className="landing-about-copy">
           <p className="landing-kicker">{t('landing.aboutEyebrow')}</p>
           <h2 id="about-title">{t('landing.aboutTitle')}</h2>
-          <p className="landing-section-description">{t('landing.aboutDescription')}</p>
+          <p className="landing-section-description">
+            {t('landing.aboutDescription')}
+          </p>
           <div className="landing-benefit-list">
             {landingBenefits.map(({ icon: Icon, key }) => (
               <div key={key} className="landing-benefit-item">
-                <span className="landing-benefit-icon"><Icon size={15} aria-hidden="true" /></span>
-                <span><strong>{t(`landing.benefits.${key}.title`)}</strong><small>{t(`landing.benefits.${key}.description`)}</small></span>
+                <span className="landing-benefit-icon">
+                  <Icon size={15} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>{t(`landing.benefits.${key}.title`)}</strong>
+                  <small>{t(`landing.benefits.${key}.description`)}</small>
+                </span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="landing-cta" aria-labelledby="cta-title">
-        <span className="landing-cta-mark" aria-hidden="true"><Leaf size={25} /></span>
+      <section
+        id="landing-cta"
+        className="landing-cta"
+        aria-labelledby="cta-title"
+      >
+        <span className="landing-cta-mark" aria-hidden="true">
+          <Leaf size={25} />
+        </span>
         <h2 id="cta-title">{t('landing.ctaTitle')}</h2>
         <p>{t('landing.ctaDescription')}</p>
-        <Link className="landing-primary-button landing-cta-button" to="/transactions">
+        <Link
+          className="landing-primary-button landing-cta-button"
+          to="/dashboard"
+        >
           <span>{t('landing.getStarted')}</span>
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
-        <div className="landing-footer-brand">
-          <span className="brand-mark"><Leaf size={17} aria-hidden="true" /></span>
-          <span><strong>{t('brand')}</strong><small>{t('tagline')}</small></span>
+        <div className="landing-cta-illustration" aria-hidden="true">
+          <span className="landing-cta-hill landing-cta-hill-left" />
+          <span className="landing-cta-hill landing-cta-hill-right" />
+          <span className="landing-cta-pagoda">
+            <span className="landing-cta-pagoda-spire" />
+            <span className="landing-cta-pagoda-roof landing-cta-pagoda-roof-top" />
+            <span className="landing-cta-pagoda-roof landing-cta-pagoda-roof-bottom" />
+            <span className="landing-cta-pagoda-body" />
+          </span>
         </div>
+        <div className="landing-footer-brand">
+          <span className="brand-mark">
+            <Leaf size={17} aria-hidden="true" />
+          </span>
+          <span>
+            <strong>{t('brand')}</strong>
+            <small>{t('tagline')}</small>
+          </span>
+        </div>
+        <nav className="landing-social-links" aria-label="FinMate social links">
+          {landingSocialLinks.map(({ label, href, icon: Icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={label}
+            >
+              <Icon size={16} aria-hidden="true" />
+            </a>
+          ))}
+        </nav>
         <small className="landing-copyright">{t('landing.copyright')}</small>
       </section>
     </div>
@@ -175,12 +292,8 @@ export function Placeholder({ id }: { id: ScreenId }) {
   return (
     <>
       <section className="screen-intro">
-        <h1 tabIndex={-1}>
-          {t(`${id}.title`)}
-        </h1>
-        <p>
-          {t(`${id}.description`)}
-        </p>
+        <h1 tabIndex={-1}>{t(`${id}.title`)}</h1>
+        <p>{t(`${id}.description`)}</p>
       </section>
       <section className="placeholder-card">
         <div className="placeholder-card-heading">
@@ -206,9 +319,7 @@ export function Placeholder({ id }: { id: ScreenId }) {
             </li>
           ))}
         </ul>
-        <p className="no-data-note">
-          {t('noData')}
-        </p>
+        <p className="no-data-note">{t('noData')}</p>
       </section>
       {id === 'settings' ? (
         <section className="profile-navigation">

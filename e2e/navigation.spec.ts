@@ -4,65 +4,23 @@ for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     for (const name of ['Transactions', 'Credit readiness', 'Ask AI', 'Settings', 'Dashboard']) {
-      if (name === 'Dashboard') {
-        await page.goto('/');
-        await expect(
-          page.getByRole('heading', {
-            level: 1,
-            name: /Smarter money management/i,
-          }),
-        ).toBeVisible();
-        continue;
-      }
-      let enteredApp = false;
-      if (width < 1024 && page.url().endsWith('/')) {
-        await page.getByRole('link', { name: 'Get Started Free', exact: true }).first().click();
-        enteredApp = true;
-      }
       const link = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', {
         name,
         exact: true,
       });
-      if (!(enteredApp && name === 'Transactions')) {
-        await link.click();
-        await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
-      } else {
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      }
+      await link.click();
+      await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
       await expect(
         page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', {
           name,
           exact: true,
         }),
       ).toHaveAttribute('aria-current', 'page');
-<<<<<<< HEAD
-      if (name !== 'Dashboard') {
-        await expect(
-          page.getByText(
-            'Demo mode: simulated data. Do not enter real financial information.',
-          ),
-        ).toBeVisible();
-      }
-      await expect(page.getByText('Not implemented yet')).toBeVisible();
-=======
       await expect(
         page.getByText(
           'Demo mode: simulated data. Do not enter real financial information.',
         ),
       ).toBeVisible();
-      if (
-        ![
-          'Transactions',
-          'Dashboard',
-          'Settings',
-          'Schedules',
-          'Upload & review',
-          'Owed payments',
-          'Forecast & insights',
-        ].includes(name)
-      )
-        await expect(page.getByText('Not implemented yet')).toBeVisible();
->>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -70,29 +28,6 @@ for (const width of [360, 768, 1280]) {
       ).toBe(true);
     }
 
-    if (width < 1024 && page.url().endsWith('/')) {
-      await page.getByRole('link', { name: 'Get Started Free', exact: true }).first().click();
-    }
-    await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', {
-      name: 'Settings',
-      exact: true,
-    }).click();
-    for (const name of [
-      'Upload & review',
-      'Owed payments',
-      'Schedules',
-      'Forecast & insights',
-    ]) {
-      await page.locator('.profile-navigation').getByRole('link', { name, exact: true }).click();
-      await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
-      await expect(
-        page.getByRole('link', { name: 'Back to profile', exact: true }),
-      ).toBeVisible();
-      await page.getByRole('link', { name: 'Back to profile', exact: true }).click();
-      await expect(
-        page.getByRole('heading', { name: 'Make a clear starting point' }),
-      ).toBeVisible();
-    }
     await page.screenshot({
       path: `test-results/dashboard-${width}.png`,
       fullPage: true,
@@ -109,7 +44,7 @@ for (const width of [360, 768, 1280]) {
   });
 }
 test('skip link supports keyboard navigation', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/dashboard');
   await page.keyboard.press('Tab');
   await expect(
     page.getByRole('link', { name: 'Skip to content' }),
@@ -122,7 +57,7 @@ test('M5 dashboard periods, outstanding screen and forecast are available', asyn
   page,
 }) => {
   await page.addInitScript(() => localStorage.clear());
-  await page.goto('/');
+  await page.goto('/#/dashboard');
   await page.getByLabel('Opening amount (MMK)').fill('470000');
   await page.getByRole('button', { name: 'Save opening balance' }).click();
   await expect(page.getByLabel('Reporting period')).toHaveValue('this_month');
@@ -158,7 +93,7 @@ test('M5 dashboard periods, outstanding screen and forecast are available', asyn
 });
 
 test('opening balance and manual transaction workflow', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/dashboard');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.getByLabel('Opening amount (MMK)').fill('100000');

@@ -4,13 +4,43 @@ import { describe, it, expect } from 'vitest';
 import { App } from './App';
 import { useDemoStore } from '../store/demoStore';
 describe('foundation', () => {
+  it('renders the FinMate landing page and enters the dashboard through its CTA', () => {
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: /smarter money management for freelancers & small businesses/i,
+      }),
+    ).toBeVisible();
+
+    const cta = screen
+      .getAllByRole('link', { name: 'Get Started Free' })
+      .find((link) => link.classList.contains('landing-primary-button'));
+    expect(cta).toBeDefined();
+    fireEvent.click(cta!);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Your financial picture',
+    );
+  });
+
   it('keeps the demo disclosure and placeholder after navigation', () => {
     render(
       <MemoryRouter>
         <App />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getAllByRole('link', { name: 'Ask AI', hidden: true })[0]);
+    const cta = screen
+      .getAllByRole('link', { name: 'Get Started Free' })
+      .find((link) => link.classList.contains('landing-primary-button'));
+    fireEvent.click(cta!);
+    fireEvent.click(
+      screen.getAllByRole('link', { name: 'Ask AI', hidden: true })[0],
+    );
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Ask your companion',
     );
@@ -33,7 +63,7 @@ describe('foundation', () => {
     ).toBeVisible();
     fireEvent.click(screen.getByRole('link', { name: 'Back to dashboard' }));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Smarter money management',
+      'Your financial picture',
     );
   });
 

@@ -10,7 +10,7 @@ import {
   Settings,
 } from 'lucide-react';
 export const screens = [
-  { id: 'dashboard', path: '/', icon: LayoutDashboard },
+  { id: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
   { id: 'transactions', path: '/transactions', icon: ArrowLeftRight },
   { id: 'capture', path: '/capture', icon: ScanLine },
   { id: 'owed', path: '/owed', icon: Users },
@@ -23,7 +23,7 @@ export const screens = [
 export type ScreenId = (typeof screens)[number]['id'];
 
 export const primaryNavigation = [
-  { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'dashboard' },
+  { id: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'dashboard' },
   {
     id: 'transactions',
     path: '/transactions',
