@@ -22,6 +22,7 @@ export const transactionSchema = z
     amount: moneySchema,
     currency: z.literal('MMK'),
     date: isoDateSchema,
+    dueDate: isoDateSchema.optional(),
     /** If provided, this payment time is precise and overrides date-only ordering. */
     occurredAt: isoInstantSchema.optional(),
     /** Required to place a date-only movement on the opening day. */
@@ -40,6 +41,27 @@ export const transactionSchema = z
     updatedAt: isoInstantSchema,
   })
   .superRefine((transaction, context) => {
+    if (transaction.cashStatus === 'pending' && !transaction.dueDate) {
+      context.addIssue({
+        code: 'custom',
+        path: ['dueDate'],
+        message: 'Pending transactions need a due date.',
+      });
+    }
+    if (
+      transaction.dueDate &&
+      transaction.dueDate < transaction.date &&
+      !(
+        transaction.source === 'recurring' &&
+        transaction.cashStatus === 'settled'
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['dueDate'],
+        message: 'Due date cannot be before the transaction date.',
+      });
+    }
     if (transaction.occurredAt && transaction.openingDayDisposition) {
       context.addIssue({
         code: 'custom',
@@ -412,7 +434,19 @@ export const emptyAppData = (): AppData => ({
   openingBalance: null,
   transactions: [],
   counterparties: [],
-  categories: [],
+  categories: [
+    { id: 'client-income', name: 'Client income', type: 'income' },
+    { id: 'sales', name: 'Sales', type: 'income' },
+    { id: 'other-income', name: 'Other income', type: 'income' },
+    { id: 'supplies', name: 'Supplies', type: 'expense' },
+    { id: 'inventory', name: 'Inventory', type: 'expense' },
+    { id: 'transport', name: 'Transport', type: 'expense' },
+    { id: 'utilities', name: 'Utilities', type: 'expense' },
+    { id: 'rent', name: 'Rent', type: 'expense' },
+    { id: 'marketing', name: 'Marketing', type: 'expense' },
+    { id: 'food', name: 'Food', type: 'expense' },
+    { id: 'other-expense', name: 'Other expense', type: 'expense' },
+  ],
   scheduleRules: [],
   paymentOccurrences: [],
   duplicateReviews: [],

@@ -9,7 +9,7 @@
   "quickAccessBody": "Open any workspace feature without leaving this app.",
   "backToProfile": "Back to profile",
   "prototype": "FRONTEND PROTOTYPE",
-  "phase": "M0 · Foundation",
+  "phase": "M5 · Dashboard and cash-flow forecast",
   "status": "Not implemented yet",
   "planned": "What’s planned",
   "scope": "This screen is a placeholder. Financial features will arrive in upcoming milestones.",
@@ -22,6 +22,7 @@
   "reload": "Reload",
   "footer": "Built for everyday clarity. Synthetic data only.",
   "dismiss": "Dismiss",
+<<<<<<< HEAD
   "landing": {
     "eyebrow": "Simple · Clean · User friendly",
     "heroTitle": "Smarter money management for freelancers & small businesses",
@@ -71,6 +72,63 @@
       "Reporting periods and income versus expenses",
       "Outstanding payments and early warnings"
     ]
+=======
+  "form": {
+    "amountError": "Enter a whole MMK amount within the supported limit.",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "opening": {
+    "title": "Set your opening balance",
+    "intro": "Enter the cash amount you had at a specific date and time. This is a starting point for the demo, not a bank verification.",
+    "amount": "Opening amount (MMK)",
+    "referenceAt": "Balance date and time",
+    "timezone": "Time is interpreted in Asia/Rangoon (UTC+06:30).",
+    "save": "Save opening balance",
+    "update": "Update opening balance",
+    "saved": "Opening balance saved.",
+    "futureError": "The opening reference time cannot be in the future."
+  },
+  "balance": {
+    "available": "Recorded available balance",
+    "netMovement": "Net cash movement",
+    "allTime": "Settled income minus settled expenses across all recorded dates.",
+    "asOf": "Opening reference date: {{date}} · calculated from settled records",
+    "reviewOpeningDay": "{{count}} transaction(s) on the opening date need a timing choice:",
+    "unconfirmedDisclosure": "The balance includes {{count}} auto-recorded payment assumption(s) that still need your confirmation."
+  },
+  "transaction": {
+    "type": "Type",
+    "income": "Income",
+    "expense": "Expense",
+    "amount": "Amount (MMK)",
+    "date": "Transaction date",
+    "status": "Payment status",
+    "settled": "Paid / received",
+    "pending": "Pending",
+    "dueDate": "Due date",
+    "confirmation": "Payment confirmation",
+    "unconfirmed": "Unconfirmed",
+    "confirmed": "Confirmed paid",
+    "category": "Category",
+    "uncategorized": "No category",
+    "description": "Description"
+  },
+  "category": {
+    "client-income": "Client income",
+    "sales": "Sales",
+    "other-income": "Other income",
+    "supplies": "Supplies",
+    "inventory": "Inventory",
+    "transport": "Transport",
+    "utilities": "Utilities",
+    "rent": "Rent",
+    "marketing": "Marketing",
+    "food": "Food",
+    "other-expense": "Other expense",
+    "uncategorized": "Uncategorized"
+>>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
   },
   "transactions": {
     "title": "Transactions",
@@ -81,22 +139,102 @@
       "Add, edit and search records",
       "Choose categories manually",
       "Confirm or correct an existing payment"
+    ],
+    "open": "View transactions",
+    "add": "Add transaction",
+    "edit": "Correct existing record",
+    "editHelp": "Changes update this record in place so its history stays connected.",
+    "save": "Save transaction",
+    "saveCorrection": "Save correction",
+    "openingRequired": "Set an opening balance before adding transactions.",
+    "futureSettled": "A paid transaction cannot have a future date.",
+    "dueDateError": "A pending transaction needs a due date on or after its transaction date.",
+    "openingDayError": "Choose whether this transaction is already represented in the opening balance.",
+    "openingDayPrompt": "How does this transaction relate to the opening balance?",
+    "alreadyIncluded": "It was already included in the opening balance",
+    "afterReference": "It happened after the opening balance time",
+    "search": "Search records",
+    "filter": "Show",
+    "all": "All transactions",
+    "empty": "No transactions match yet.",
+    "deleted": "Transaction deleted.",
+    "undo": "Undo",
+    "confirmDelete": "Delete this transaction? You can undo it immediately after.",
+    "linkedDeleteError": "This payment is linked to a schedule and cannot be deleted here."
+  },
+  "dashboard": {
+    "title": "Your financial picture, in one place.",
+    "nav": "Dashboard",
+    "description": "A calm space to understand what comes in, what goes out, and what needs your attention.",
+    "recent": "Recent transactions",
+    "recentHelp": "Your latest recorded activity.",
+    "empty": "Add a transaction to begin building your record.",
+    "outstanding": "Outstanding · receivable / payable",
+    "outstandingHelp": "Open due dates and obligations",
+    "periodSummary": "Cash movement by period",
+    "reportingPeriod": "Reporting period",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "last30Days": "Last 30 days",
+    "periodIncome": "Income",
+    "periodExpenses": "Expenses",
+    "settledOnly": "Based on {{count}} settled transaction(s); pending items are excluded.",
+    "monthlyChart": "Monthly income and expenses",
+    "monthlyChartHelp": "Settled cash movement over the latest six months.",
+    "monthlyChartAccessible": "Bar chart comparing settled income and expenses over six months.",
+    "items": [
+      "Recorded available balance and net cash movement",
+      "Reporting periods and income versus expenses",
+      "Outstanding payments and early warnings"
     ]
   },
   "capture": {
     "title": "Upload & review",
     "nav": "Upload & review",
-    "description": "Turn sample receipts into records you can review.",
+    "description": "Review a receipt or screenshot and confirm its details before saving a record.",
+    "uploadTitle": "Choose a receipt or screenshot",
+    "privacy": "Prototype only: the image stays in this browser tab and is never sent to a service. Only reviewed transaction fields are saved; the image preview is discarded when you leave this screen.",
+    "imageLabel": "Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)",
+    "fileTypeError": "Choose a JPEG, PNG, or WebP image.",
+    "emptyFileError": "That image file is empty. Choose another file or enter the details manually.",
+    "fileSizeError": "The image must be 5 MB or smaller. Choose a smaller image or enter the details manually.",
+    "previewAlt": "Local preview of the selected receipt or screenshot",
+    "simulate": "Simulate sample extraction",
+    "manual": "Image unreadable or unavailable · enter manually",
+    "sampleNotice": "Sample extraction · simulated, not OCR. These example fields may be wrong; review and correct each one.",
+    "manualNotice": "Manual entry selected. Enter the details you can read from the receipt, or continue without an image.",
+    "sampleDescription": "Sample receipt purchase",
+    "chooseReviewMode": "Choose sample extraction or manual entry before reviewing fields.",
+    "reviewTitle": "Review transaction fields",
+    "reviewHelp": "Check the amount, date, payment status, category, and description. This prototype does not read the image.",
+    "confirmReview": "I reviewed and confirm these transaction fields.",
+    "reviewRequired": "Review the fields and confirm them before saving.",
+    "saveReviewed": "Save reviewed transaction",
+    "saved": "Reviewed transaction saved. The image was not stored.",
     "items": [
-      "Image preview and simulated extraction",
-      "Correct fields before saving",
-      "Manual entry when extraction is incomplete"
+      "Local image preview and simulated sample extraction",
+      "Correct fields and confirm before saving",
+      "Manual entry when an image is unreadable"
     ]
   },
   "owed": {
     "title": "Who owes what",
     "nav": "Owed payments",
     "description": "Keep incoming payments and outgoing obligations distinct.",
+    "receivableTotal": "Owed to me",
+    "payableTotal": "I owe",
+    "receivables": "Incoming payments",
+    "payables": "Outgoing obligations",
+    "noReceivables": "No unpaid incoming payments.",
+    "noPayables": "No unpaid outgoing obligations.",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "recordedOn": "Recorded {{date}}",
+    "dueOn": "Due {{date}}",
+    "overdue": "Overdue",
+    "upcoming": "Upcoming",
+    "updatePayment": "Update payment",
+    "assumptionsExcluded": "These assumptions are not included in outstanding totals.",
     "items": [
       "Who owes me",
       "Who I owe",
@@ -107,11 +245,39 @@
     "title": "Plan the next payment",
     "nav": "Schedules",
     "description": "One-time and monthly payments, with a shared lifecycle.",
+    "add": "Add a payment schedule",
+    "addHelp": "Future payments stay scheduled. When due, the demo records an unconfirmed assumption for you to review. Monthly schedules catch up missed months and show a rolling one-year forecast.",
+    "repeat": "Repeats",
+    "oneTime": "One time",
+    "monthly": "Monthly",
+    "startDate": "First eligible date",
+    "dayOfMonth": "Day of month (1–31)",
+    "endDate": "Last eligible date (optional)",
+    "monthlyDayLabel": "Monthly · day {{day}} (clamped to month end)",
+    "forecastHelp": "Monthly schedules show past occurrences and a rolling one-year forecast. Forecasts do not count in cash totals.",
+    "save": "Save schedule",
+    "saveError": "This schedule could not be saved. Check the details and try again.",
+    "list": "Your payment schedules",
+    "empty": "No payment schedules yet.",
+    "paymentDate": "Recorded payment date",
+    "correct": "Confirm or correct",
+    "markUnpaid": "Mark unpaid",
+    "confirmUnpaid": "Mark this payment as unpaid? Its cash movement will be removed and the obligation restored.",
+    "cancel": "Cancel schedule",
+    "confirmCancel": "Cancel this future payment?",
+    "canceled": "Canceled · existing payment history kept",
     "items": [
       "One-time and monthly schedules",
       "Auto-recorded · Unconfirmed payments when due",
       "Confirm, correct or mark unpaid"
     ]
+  },
+  "scheduleStatus": {
+    "scheduled": "Scheduled · forecast only",
+    "canceled": "Canceled",
+    "assumed_unconfirmed": "Auto-recorded · Unconfirmed",
+    "confirmed_paid": "Confirmed paid",
+    "explicitly_unpaid": "Marked unpaid"
   },
   "insights": {
     "title": "Look ahead with clarity",
@@ -122,6 +288,21 @@
       "Rule-based demo insights with evidence",
       "Review possible duplicates or keep both"
     ]
+  },
+  "forecast": {
+    "openingRequired": "Set an opening balance to view the cash-flow forecast.",
+    "disclaimer": "Estimated from your recorded available balance, unpaid obligations and scheduled occurrences. This is not a bank balance or financial advice. The delayed-inflow case moves expected income seven days later.",
+    "baseCase": "Expected dates",
+    "lateCase": "Income delayed by seven days",
+    "lowPoint": "Lowest projected balance",
+    "noShortfall": "No projected cash shortfall",
+    "shortfall": "Projected shortfall: {{amount}} MMK",
+    "dailyTitle": "14-day daily forecast",
+    "date": "Date",
+    "inflows": "Inflows",
+    "outflows": "Outflows",
+    "baseBalance": "Expected balance",
+    "lateBalance": "Delayed-income balance"
   },
   "chat": {
     "title": "Ask your companion",
@@ -148,8 +329,13 @@
   "settings": {
     "title": "Make a clear starting point",
     "nav": "Settings",
+<<<<<<< HEAD
     "tab": "Profile",
     "description": "Your demo preferences and opening-balance setup will live here.",
+=======
+    "description": "Manage your starting point for recorded balances.",
+    "carryForward": "Your recorded available balance carries forward from this reference point as settled transactions are added.",
+>>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
     "items": [
       "Opening balance with its reference date and time",
       "Automatic daily carry-forward",

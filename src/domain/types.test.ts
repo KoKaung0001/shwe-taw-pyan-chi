@@ -91,6 +91,7 @@ describe('persisted data contracts', () => {
     data.transactions[0] = {
       ...data.transactions[0],
       cashStatus: 'pending',
+      dueDate: '2026-11-05',
       confirmationStatus: 'not_applicable',
     };
     expect(appDataSchema.safeParse(data).success).toBe(true);

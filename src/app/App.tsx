@@ -4,13 +4,24 @@ import { ArrowLeft, FlaskConical, Leaf, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { primaryNavigation, screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
+import { CapturePage } from '../features/CapturePage';
+import { ForecastPage, OwedPage } from '../features/AnalysisPages';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
+<<<<<<< HEAD
 
 const secondaryScreens = screens.filter(
   ({ id }) => !primaryNavigation.some((screen) => screen.id === id),
 );
 
+=======
+import {
+  DashboardPage,
+  SchedulesPage,
+  SettingsPage,
+  TransactionsPage,
+} from '../features/FinancialPages';
+>>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
 export function App() {
   const { t } = useTranslation();
   const storageNotice = useDemoStore((state) => state.storageNotice);
@@ -27,6 +38,7 @@ export function App() {
       document.querySelector<HTMLElement>('h1')?.focus();
       previousPath.current = location.pathname;
     }
+<<<<<<< HEAD
     document.title = `${currentScreen ? t(`${currentScreen.id}.nav`) : t('notFound')} · ${t('brand')}`;
   }, [currentScreen, location.pathname, t]);
 
@@ -52,6 +64,19 @@ export function App() {
     </ErrorBoundary>
   );
 
+=======
+    const screen = screens.find((s) => s.path === location.pathname);
+    document.title = `${screen ? t(`${screen.id}.nav`) : t('notFound')} · ${t('brand')}`;
+  }, [location.pathname, t]);
+  useEffect(() => {
+    const process = () => useDemoStore.getState().processDueSchedules();
+    if (useDemoStore.persist.hasHydrated()) {
+      process();
+      return;
+    }
+    return useDemoStore.persist.onFinishHydration(process);
+  }, []);
+>>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
   return (
     <div className="app-backdrop">
       <a
@@ -184,7 +209,72 @@ export function App() {
               </NavLink>
             ))}
           </nav>
+<<<<<<< HEAD
         ) : null}
+=======
+          <p className="hidden border-t border-[#e4e9e2] px-7 py-6 text-xs leading-relaxed text-muted lg:block">
+            {t('tagline')}
+          </p>
+        </aside>
+        <div className="min-w-0">
+          <header className="flex items-center justify-between border-b border-[#e4e9e2] px-6 py-5 sm:px-10">
+            <span className="text-sm text-muted">{t('brand')}</span>
+            <span className="rounded-full border border-[#cdddcf] px-3 py-1 text-xs font-medium text-accent">
+              {t('phase')}
+            </span>
+          </header>
+          <main
+            id="main"
+            tabIndex={-1}
+            className="mx-auto max-w-5xl px-5 py-9 sm:px-10 sm:py-12"
+          >
+            <ErrorBoundary key={location.pathname}>
+              <Routes>
+                {screens.map(({ id, path }) => (
+                  <Route
+                    key={id}
+                    path={path}
+                    element={
+                      id === 'dashboard' ? (
+                        <DashboardPage />
+                      ) : id === 'transactions' ? (
+                        <TransactionsPage />
+                      ) : id === 'schedules' ? (
+                        <SchedulesPage />
+                      ) : id === 'capture' ? (
+                        <CapturePage />
+                      ) : id === 'owed' ? (
+                        <OwedPage />
+                      ) : id === 'insights' ? (
+                        <ForecastPage />
+                      ) : id === 'settings' ? (
+                        <SettingsPage />
+                      ) : (
+                        <Placeholder id={id} />
+                      )
+                    }
+                  />
+                ))}
+                <Route
+                  path="*"
+                  element={
+                    <section>
+                      <h1 tabIndex={-1} className="text-3xl font-semibold">
+                        {t('notFound')}
+                      </h1>
+                      <p className="my-4">{t('notFoundBody')}</p>
+                      <Link className="underline" to="/">
+                        {t('back')}
+                      </Link>
+                    </section>
+                  }
+                />
+              </Routes>
+            </ErrorBoundary>
+            <footer className="mt-10 text-xs text-muted">{t('footer')}</footer>
+          </main>
+        </div>
+>>>>>>> 924d240779f4861cf808885350e50a3c32e090c3
       </div>
     </div>
   );

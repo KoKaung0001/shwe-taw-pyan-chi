@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 and M1 are complete; M2 requires review before work begins.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M5 are complete; review M5 before beginning M6.
 
 ## Agreed product decisions
 
@@ -13,25 +13,30 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 7. Flag possible duplicates without merging or deleting. The user chooses which redundant record to remove or Keep both. Persist review outcomes against record versions/fingerprints so unchanged legitimate pairs do not repeatedly warn; changed pairs can be reviewed again. Linked corrections bypass duplicate creation.
 8. Manual category selection works independently. Forecasts work from recorded obligations; recurring rules add occurrences by the same mechanism. Credit readiness measures record completeness, never creditworthiness or approval. MMK 180,000 is a calculated seed regression case, never a fixed dashboard value.
 9. Frontend and synthetic data only. Simulated OCR requires review; insights/chat are rule-based and labelled. No real OCR, AI, financial integrations or backend in this delivery.
+10. M2 manual records use whole MMK amounts. Pending transactions require a due date on or after the record date; pending amounts do not affect cash balances. Settled future-dated transactions are rejected. The opening reference is entered in Asia/Rangoon regardless of the browser's timezone. Correcting a record preserves its ID and creation time; manual deletion can be undone immediately in the current session. Linked scheduled payments are corrected through their occurrence lifecycle.
+11. M3a creates one-time payment rules with stable occurrence IDs. Future occurrences remain forecast-only. On app load, due occurrences become settled transactions dated on the original due date and labelled **Auto-recorded · Unconfirmed**. Catch-up is idempotent; explicitly unpaid occurrences stay unpaid. Users may cancel future schedules, confirm/correct the linked transaction, or mark a processed occurrence unpaid. Every affected balance discloses unconfirmed assumptions.
+12. M3b monthly rules generate one date per eligible month, clamping a requested day (such as 31) to that month's last day while retaining the requested day for later months. Dates before the start date and after the inclusive end date are skipped. App load catches up every due occurrence once and creates scheduled, forecast-only occurrences through a rolling 365-day horizon. Canceling a monthly rule removes its future scheduled occurrences and preserves processed history.
+13. M4 accepts nonempty JPEG, PNG and WebP images up to 5 MB. A local preview and clearly labelled sample extraction help demonstrate the review flow; the extraction is not OCR and does not inspect image pixels. Users can correct every field or enter details manually when an image is unreadable. A confirmation checkbox is required before saving. The image stays in the current browser tab, is not sent to a service or stored, and only the confirmed transaction fields persist. Image-derived records use `source: receipt_image` and `ocrReviewStatus: reviewed`; manual fallback without an image uses a manual source.
+14. M5 reporting periods include settled transactions only; pending items remain in owed totals and forecast inputs. The dashboard offers this month, last month and rolling 30 days, and compares six months of settled income and expenses. Outstanding income and expense are shown separately, with overdue state derived from due date. The 14-day forecast starts from recorded available balance, brings overdue pending obligations to today, counts scheduled occurrences once, and shifts expected inflows by seven days in the delayed scenario. The 180,000 shortfall is a regression result from the specified inputs, never a fixed display value.
 
 ## Implementation assumptions (not new product decisions)
 
 - Store the opening reference as an instant plus Asia/Rangoon business timezone. With date-only payments before the reference day, exclude them from available-balance accumulation; after the day, include them. On the opening day explicitly distinguish already-in-opening from after-reference movements. A date alone cannot establish ordering: require that choice rather than guessing. Timestamped payments count strictly after the reference instant; equality is included in opening. Period cash reporting can still show historical payments without adding them twice to available balance. M1 must encode/test this contract before financial UI.
 - M1 persistence contract: one versioned Zustand record validates opening balance, transactions, rules, occurrences, duplicate outcomes and checklist with Zod. A monthly occurrence ID is the rule ID plus its original due date; each recorded occurrence links to exactly one matching recurring transaction. Invalid, corrupt, oversized or unknown-version data resets to empty demo state and exposes a dismissible notice. A schema version change resets synthetic state until a tested migration is added.
 - Monthly dates absent in a month clamp to its final day, retaining the rule's original day for the next month. Calendar dates use the business timezone. Test this when scheduling is implemented.
-- M0 uses hash routing for static hosting, a desktop sidebar and mobile expandable navigation. No fake financial cards, data, storage, forms or engines.
+- M0 uses hash routing for static hosting, a desktop sidebar and mobile expandable navigation. No seeded financial figures or simulated financial engines are included.
 - Node 24 LTS baseline (local runtime 24.20.0); React 18, TypeScript, Vite, React Router, Tailwind, lucide-react, react-i18next, ESLint, Prettier, Vitest/RTL and Playwright. Install Zustand, Zod, React Hook Form, Recharts, date-fns and shadcn/Radix components only when actually used.
 
 ## Reference conflicts resolved
 
 | Older wording                                                    | Resolution                                                                                                          |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Wait for first reply/milestone permission                        | Explicit authorization to implement M0 now; review before M1                                                        |
+| Wait for first reply/milestone permission                        | User authorization continues milestone work; review M3a before M3b                                                  |
 | Net balance / all-time paid totals plus optional opening balance | Separate net movement and dated recorded available balance; reference rules above                                   |
 | Paid/pending only, auto-log as paid                              | Scheduled, assumed unconfirmed, confirmed paid, explicitly unpaid; payment confirmation is separate from OCR review |
 | Recurrence P1 after forecast; weekly/monthly                     | Required one-time and monthly scheduling before forecast; weekly is not added to agreed scope                       |
 | Add transaction includes auto-categorize                         | Manual category independent, optional suggestion                                                                    |
-| Forecast adds rules and payments separately                      | Expand to stable occurrences, count each once                                                                       |
+| Forecast adds rules and payments separately                      | Expand to stable occurrences, count each once; M5 includes scheduled occurrences in the 14-day horizon              |
 | Fixed demo warning                                               | Seed test only; live calculations from current synthetic records                                                    |
 | Optional real OCR adapter                                        | Mock only for this prototype                                                                                        |
 
