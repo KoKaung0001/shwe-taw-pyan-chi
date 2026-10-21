@@ -21,3 +21,16 @@ export const screens = [
   { id: 'settings', path: '/settings', icon: Settings },
 ] as const;
 export type ScreenId = (typeof screens)[number]['id'];
+
+export const primaryNavigation = [
+  { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'dashboard' },
+  {
+    id: 'transactions',
+    path: '/transactions',
+    icon: ArrowLeftRight,
+    label: 'transactions',
+  },
+  { id: 'readiness', path: '/readiness', icon: ClipboardCheck, label: 'readiness' },
+  { id: 'chat', path: '/chat', icon: MessageCircle, label: 'chat' },
+  { id: 'settings', path: '/settings', icon: Settings, label: 'settings' },
+] as const;

@@ -10,7 +10,7 @@ describe('foundation', () => {
         <App />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole('link', { name: 'Ask AI', hidden: true }));
+    fireEvent.click(screen.getAllByRole('link', { name: 'Ask AI', hidden: true })[0]);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Ask your companion',
     );
@@ -29,11 +29,11 @@ describe('foundation', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { name: 'Page not found' }),
+      screen.getByRole('heading', { level: 1, name: 'Page not found' }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('link', { name: 'Back to dashboard' }));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Your financial picture',
+      'Smarter money management',
     );
   });
 

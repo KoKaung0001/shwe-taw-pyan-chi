@@ -1,12 +1,13 @@
 {
-  "brand": "FinTech Companion",
-  "tagline": "A clearer view of your money",
+  "brand": "FinMate",
+  "tagline": "Your financial companion",
   "demo": "Demo mode: simulated data. Do not enter real financial information.",
   "skip": "Skip to content",
   "navigation": "Main navigation",
-  "menu": "Menu",
-  "close": "Close menu",
-  "workspace": "YOUR WORKSPACE",
+  "workspace": "WORKSPACE",
+  "quickAccess": "Quick access",
+  "quickAccessBody": "Open any workspace feature without leaving this app.",
+  "backToProfile": "Back to profile",
   "prototype": "FRONTEND PROTOTYPE",
   "phase": "M0 · Foundation",
   "status": "Not implemented yet",
@@ -21,9 +22,49 @@
   "reload": "Reload",
   "footer": "Built for everyday clarity. Synthetic data only.",
   "dismiss": "Dismiss",
+  "landing": {
+    "eyebrow": "Simple · Clean · User friendly",
+    "heroTitle": "Smarter money management for freelancers & small businesses",
+    "heroDescription": "Track your income, expenses, and payments — all in one place. Get AI insights, reduce manual work, and build credit readiness with ease.",
+    "getStarted": "Get Started Free",
+    "watchDemo": "Watch Demo",
+    "previewLabel": "FinMate financial overview preview",
+    "previewCaption": "Your financial picture",
+    "income": "Income",
+    "expenses": "Expenses",
+    "previewInsight": "A clearer week ahead",
+    "previewInsightBody": "See what needs your attention",
+    "trustLabel": "FinMate benefits",
+    "secure": "Secure & private",
+    "easy": "Easy to use",
+    "myanmar": "Built for Myanmar",
+    "featuresEyebrow": "Key features",
+    "featuresTitle": "Everything you need in one app",
+    "featuresDescription": "Simple tools. Powerful insights. Real financial clarity.",
+    "features": {
+      "trackFinances": { "title": "Track finances", "description": "See your income, expenses, and payments at a glance." },
+      "smartOcr": { "title": "Smart OCR", "description": "Upload receipts or screenshots and let AI extract the details." },
+      "aiInsights": { "title": "AI insights", "description": "Get useful insights about your spending, patterns, and possible issues." },
+      "aiAssistant": { "title": "AI assistant", "description": "Ask questions about your finances in natural language." },
+      "creditReadiness": { "title": "Credit readiness", "description": "Check your record completeness and know what to prepare." },
+      "simpleFriendly": { "title": "Simple & friendly", "description": "Designed for freelancers and small businesses in Myanmar." }
+    },
+    "aboutEyebrow": "About FinMate",
+    "aboutTitle": "Built for Myanmar’s freelancers & small businesses",
+    "aboutDescription": "Whether you’re a freelancer, gig worker, or small business owner, FinMate helps you stay organized, save time, and make better financial decisions — today and tomorrow.",
+    "benefits": {
+      "independence": { "title": "Independence", "description": "Track your personal or business finances." },
+      "growth": { "title": "Growth", "description": "Build better financial habits." },
+      "opportunity": { "title": "Opportunity", "description": "Prepare for future credit and bigger goals." }
+    },
+    "ctaTitle": "Ready to take control of your finances?",
+    "ctaDescription": "Join freelancers and small businesses who are building a clearer financial future with FinMate.",
+    "copyright": "© 2026 FinMate. All rights reserved."
+  },
   "dashboard": {
     "title": "Your financial picture, in one place.",
     "nav": "Dashboard",
+    "tab": "Dashboard",
     "description": "A calm space to understand what comes in, what goes out, and what needs your attention.",
     "items": [
       "Recorded available balance and net cash movement",
@@ -34,6 +75,7 @@
   "transactions": {
     "title": "Transactions",
     "nav": "Transactions",
+    "tab": "Transactions",
     "description": "Keep everyday income and expenses together.",
     "items": [
       "Add, edit and search records",
@@ -84,6 +126,7 @@
   "chat": {
     "title": "Ask your companion",
     "nav": "Ask AI",
+    "tab": "Ask AI",
     "description": "A planned rule-based demonstration grounded in synthetic records.",
     "items": [
       "Questions about recorded income and expenses",
@@ -94,6 +137,7 @@
   "readiness": {
     "title": "Prepare your records",
     "nav": "Credit readiness",
+    "tab": "Credit",
     "description": "Record completeness, not a credit score or a prediction of loan approval.",
     "items": [
       "Record-completeness checks",
@@ -104,6 +148,7 @@
   "settings": {
     "title": "Make a clear starting point",
     "nav": "Settings",
+    "tab": "Profile",
     "description": "Your demo preferences and opening-balance setup will live here.",
     "items": [
       "Opening balance with its reference date and time",
