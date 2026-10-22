@@ -202,22 +202,19 @@
   text-decoration: none;
 }
 .brand-symbol {
-  display: grid;
-  width: 42px;
-  height: 42px;
+  display: block;
+  width: 48px;
+  height: 48px;
   flex: 0 0 auto;
-  place-items: center;
-  border-radius: 15px;
-  background: #e8f1ff;
-  color: var(--primary);
+  background: url('/shwe-taw-pyan-chi-logo.png') center / contain no-repeat;
 }
 .brand-name {
   max-width: 145px;
-  font-size: 0.95rem;
-  font-weight: 750;
-  letter-spacing: -0.035em;
-  line-height: 1.15;
 }
+.brand-wordmark { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; font-size: 0.95rem; font-weight: 750; letter-spacing: -0.035em; line-height: 1.08; white-space: nowrap; }
+.brand-wordmark-blue { color: #263fa8; }
+.brand-wordmark-purple { color: #9270d4; }
+.brand-wordmark-inline { display: inline-flex; flex-direction: row; vertical-align: baseline; font-size: inherit; font-weight: inherit; letter-spacing: inherit; line-height: inherit; }
 .sidebar-caption {
   margin: 2.1rem 0.8rem 0.65rem;
   color: #8794a5;
@@ -340,18 +337,6 @@
   display: flex;
   align-items: center;
   gap: 0.7rem;
-}
-.demo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid #dce8f8;
-  border-radius: 999px;
-  background: white;
-  color: #50627c;
-  font-size: 0.72rem;
-  font-weight: 650;
 }
 .avatar-button {
   color: #1769dc;
@@ -1023,12 +1008,6 @@
 }
 
 @media (max-width: 640px) {
-  .demo-badge {
-    gap: 0.25rem;
-    padding: 0.35rem 0.5rem;
-    font-size: 0.65rem;
-    white-space: nowrap;
-  }
   .topbar {
     padding-right: 0.65rem;
     padding-left: 0.65rem;
@@ -1300,22 +1279,11 @@ body { background: #ffffff; color: #17283e; }
   background: #ffffff;
   backdrop-filter: none;
 }
-.mobile-brand { gap: 9px; color: #17283e; font-size: 0.86rem; }
-.mobile-brand .brand-symbol { width: 34px; height: 34px; border-radius: 11px; }
+.mobile-brand { gap: 8px; color: #17283e; font-size: 0.86rem; }
+.mobile-brand .brand-symbol { width: 38px; height: 38px; }
+.mobile-brand-name { font-size: 0.76rem; }
 .topbar-context { color: #4f627a; font-size: 0.88rem; font-weight: 600; }
 .topbar-actions { gap: 12px; }
-.demo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 11px;
-  border: 1px solid #dce8f8;
-  border-radius: 999px;
-  background: #f3f8ff;
-  color: #355778;
-  font-size: 0.72rem;
-  font-weight: 650;
-}
 .record-action, .action-button {
   display: inline-flex;
   min-height: 44px;
@@ -1447,7 +1415,7 @@ body { background: #ffffff; color: #17283e; }
   .app-frame { display: grid; grid-template-columns: 248px minmax(0, 1fr); }
   .app-sidebar { position: sticky; top: 0; display: flex; width: auto; height: 100dvh; padding: 24px 16px 16px; border-right: 1px solid #e1e9f3; background: #ffffff; box-shadow: none; visibility: visible; transform: none; }
   .brand-lockup { gap: 11px; padding: 0 8px; }
-  .brand-symbol { width: 40px; height: 40px; border-radius: 13px; }
+  .brand-symbol { width: 46px; height: 46px; }
   .brand-name { max-width: none; font-size: 0.93rem; }
   .sidebar-caption { margin: 30px 11px 9px; color: #62758d; font-size: 0.66rem; letter-spacing: 0.08em; }
   .primary-navigation { gap: 4px; }
@@ -1482,9 +1450,6 @@ body { background: #ffffff; color: #17283e; }
   .dashboard-page > .summary-grid { grid-template-columns: 1fr; }
   .dashboard-page > .movement-details { width: 100%; }
   .balance-amount { margin-top: 22px; font-size: clamp(2.55rem, 13vw, 3.5rem); }
-  .demo-badge { max-width: 40vw; overflow: hidden; white-space: nowrap; }
-  .demo-badge { font-size: 0; }
-  .demo-badge svg { width: 16px; height: 16px; }
   .topbar { padding-right: 12px; padding-left: 12px; }
   .topbar-actions { gap: 8px; }
   .record-action { min-height: 40px; gap: 5px; padding: 0 11px; font-size: 0.78rem; }
@@ -1503,7 +1468,6 @@ body { background: #ffffff; color: #17283e; }
 @media (max-width: 480px) {
   .topbar { height: auto; min-height: 98px; flex-wrap: wrap; gap: 6px; padding-top: 8px; padding-bottom: 8px; }
   .topbar-actions { width: 100%; justify-content: space-between; }
-  .demo-badge { max-width: none; overflow: visible; font-size: 0.68rem; }
 }
 
 /* FinTech MVP visual tokens and focused core-flow layouts. */
@@ -1520,7 +1484,7 @@ body { background: #ffffff; color: #17283e; }
   --accent-foreground: #1e2433;
 }
 .app-sidebar { border-color: #e3e7f0; }
-.brand-symbol, .utility-icon { background: #d8ccff; color: #3157c8; }
+.utility-icon { background: #d8ccff; color: #3157c8; }
 .navigation-link-active, .mobile-tab-active { background: #eee9ff; color: #2448b1; }
 .mobile-tab-add { color: #3157c8; font-weight: 750; }
 .mobile-tab-add svg { width: 22px; height: 22px; }
@@ -1624,6 +1588,10 @@ body { background: #ffffff; color: #17283e; }
 .confirm-dialog { width: min(100%, 450px); padding: 24px; border: 1px solid #e3e7f0; border-radius: 16px; background: #fff; box-shadow: 0 20px 60px #18203330; }
 .confirm-dialog h3 { font-size: 1.2rem; font-weight: 700; }
 .confirm-dialog p { margin: 10px 0 20px; color: #60697a; line-height: 1.5; }
+.workspace-import-dialog h2 { margin-top: 14px; font-size: 1.2rem; font-weight: 700; }
+.workspace-import-counts { margin: 0 0 20px; padding: 0; list-style: none; }
+.workspace-import-counts li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #edf0f5; color: #60697a; text-transform: capitalize; }
+.workspace-import-counts strong { color: #17283e; }
 .dialog-actions { display: flex; justify-content: end; gap: 10px; }
 .dialog-actions .secondary-action { display: inline-flex; align-items: center; min-height: 42px; }
 .field-control { min-height: 44px; padding: 8px 11px; border: 1px solid #c6cede; border-radius: 9px; background: #fff; color: #1e2433; }
@@ -1983,8 +1951,8 @@ body { background: #ffffff; color: #17283e; }
 }
 .welcome-header { position: absolute; z-index: 5; inset: 0 0 auto; display: flex; height: 76px; align-items: center; justify-content: space-between; padding: 0 max(7vw, 28px); border-bottom: 1px solid rgb(219 227 241 / 75%); background: rgb(255 255 255 / 54%); }
 .welcome-brand { display: inline-flex; align-items: center; gap: 11px; color: #17283e; font-size: 15px; font-weight: 720; text-decoration: none; }
-.welcome-brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 13px; background: #d8ccff; }
-.welcome-brand-mark span { width: 17px; height: 17px; border: 3px solid #3157c8; border-radius: 5px; transform: rotate(-8deg); }
+.welcome-brand-mark { display: block; width: 46px; height: 46px; flex: 0 0 auto; background: url('/shwe-taw-pyan-chi-logo.png') center / contain no-repeat; }
+.welcome-brand-name { font-size: 1rem; }
 .welcome-header-note, .welcome-footer { color: #68778b; font-size: 12px; font-weight: 550; }
 .welcome-artboard { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; }
 .welcome-object { position: absolute; top: var(--start-top); left: var(--start-left); display: flex; width: 174px; min-height: 74px; align-items: center; gap: 10px; padding: 12px; border: 1px solid rgb(216 225 240 / 90%); border-radius: 15px; background: rgb(255 255 255 / 94%); box-shadow: 0 12px 28px rgb(44 66 111 / 9%); transform: rotate(var(--rotation)); animation: welcome-float calc(4.8s + var(--object-index) * .37s) ease-in-out calc(var(--object-index) * -.48s) infinite alternate; transition: left 900ms cubic-bezier(.2,.76,.2,1), top 900ms cubic-bezier(.2,.76,.2,1), transform 900ms cubic-bezier(.2,.76,.2,1), opacity 650ms ease; }
@@ -2110,4 +2078,207 @@ body { background: #ffffff; color: #17283e; }
 @media (prefers-reduced-motion: reduce) {
   .welcome-object { animation: none !important; transition-duration: 1ms !important; }
   .welcome-landing-copy, .welcome-auth-card, .welcome-primary-button { transition-duration: 1ms !important; }
+}
+
+/* Atmospheric quant surfaces: warm work areas with two framed dark showcases. */
+:root {
+  --background: #f4f4f2;
+  --foreground: #111827;
+  --card: #f8f9fa;
+  --card-foreground: #111827;
+  --muted-foreground: #64748b;
+  --border: rgb(17 24 39 / 8%);
+  --input: #d1d5db;
+  --ring: #3157c8;
+}
+
+body { background: #f4f4f2; color: #111827; }
+.topbar, .app-sidebar, .mobile-bottom-nav { background: #f4f4f2; }
+.topbar { border-color: rgb(17 24 39 / 8%); }
+.page-content { background: #f4f4f2; }
+.surface-card, .balance-card, .summary-card, .recent-card, .home-upcoming, .movement-details,
+.utility-card, .transaction-form-panel, .schedule-form-panel, .activity-list-panel, .schedule-list-panel,
+.settings-panel {
+  border: 1px solid rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 3%);
+}
+.page-content section.rounded-3xl, .page-content [class*="dce4dc"] {
+  border-color: rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 3%);
+}
+.page-heading h1 { color: #111827; font-weight: 450; letter-spacing: -0.05em; }
+.navigation-link-active {
+  border-left: 4px solid #ff5500;
+  padding-left: 8px;
+  background: #e9e8e5;
+  color: #111827;
+}
+.dashboard-chart {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  border: 0;
+  border-radius: 18px;
+  background: #262b33;
+  box-shadow: none;
+  color: #f8f9fa;
+}
+.dashboard-page > .dashboard-chart { padding: 22px; }
+.dashboard-chart::before {
+  position: absolute;
+  z-index: -1;
+  inset: 10px;
+  border-radius: 11px;
+  background: #1e2229;
+  content: '';
+}
+.dashboard-chart-heading {
+  display: grid;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.dashboard-chart-heading h2 {
+  margin: 0;
+  padding: 0 0 13px;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  color: #f8f9fa;
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+.dashboard-chart-hook {
+  margin: 0;
+  padding: 12px 0 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 550;
+}
+.dashboard-chart-explanation {
+  margin: 0;
+  padding-top: 10px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.dashboard-chart .financial-chart { margin-top: 0; }
+.dashboard-chart .financial-chart-view-switch {
+  border-color: rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+}
+.dashboard-chart .financial-chart-view { color: #334155; }
+.dashboard-chart .financial-chart-view:hover:not(:disabled):not(.is-active) {
+  background: #eceef2;
+  color: #111827;
+}
+.dashboard-chart .financial-chart-view.is-active {
+  border-color: #3157c8;
+  background: #f8f9fa;
+  color: #111827;
+  box-shadow: none;
+}
+.dashboard-chart .financial-chart-legend { color: #cbd5e1; }
+.dashboard-chart .financial-chart-gridline { stroke: rgb(255 255 255 / 14%); }
+.dashboard-chart .financial-chart-y-label,
+.dashboard-chart .financial-chart-x-label { fill: #cbd5e1; }
+.dashboard-chart .financial-chart-axis-title { fill: #f8f9fa; }
+.dashboard-chart .financial-chart-net-change-point.is-positive { fill: #10b981; }
+.dashboard-chart .financial-chart-net-change-point.is-negative { fill: #f45b7a; }
+.dashboard-chart .financial-chart-net-change-point.is-selected { stroke: #ff5500; stroke-width: 2.5; }
+.dashboard-chart .financial-chart-date-point.is-active .financial-chart-keyboard-target,
+.dashboard-chart .financial-chart-date-point:focus-visible .financial-chart-keyboard-target {
+  fill: rgb(255 85 0 / 12%);
+  stroke: #ff5500;
+  stroke-width: 1.5;
+}
+.dashboard-chart .financial-chart-tooltip {
+  border-color: rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+  color: #111827;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+}
+.dashboard-chart .financial-chart-tooltip dt { color: #64748b; }
+.dashboard-chart .financial-chart-tooltip dd { color: #111827; }
+.dashboard-chart .financial-chart-empty { color: #cbd5e1; }
+
+.welcome-experience {
+  background: #262b33;
+  color: #f8f9fa;
+}
+.welcome-experience::before {
+  position: absolute;
+  z-index: -1;
+  inset: 12px;
+  border-radius: 14px;
+  background: #1e2229;
+  content: '';
+}
+.welcome-header {
+  inset: 12px 12px auto;
+  border-bottom-color: rgb(255 255 255 / 14%);
+  background: transparent;
+}
+.welcome-artboard {
+  inset: 88px 12px 12px;
+  border-radius: 0 0 14px 14px;
+  background-image: radial-gradient(rgb(248 249 250 / 15%) 1px, transparent 1px);
+  background-position: 0 0;
+  background-size: 16px 16px;
+}
+.welcome-header-note, .welcome-footer { color: #94a3b8; }
+.welcome-object, .object-note, .object-slip {
+  border-color: rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 18%);
+  color: #111827;
+}
+.welcome-object-copy strong { color: #111827; }
+.welcome-object-copy small { color: #475569; }
+.welcome-object-icon, .object-note .welcome-object-icon, .object-slip .welcome-object-icon {
+  background: #eceef2;
+  color: #3157c8;
+}
+.welcome-receipt-rule { background: rgb(17 24 39 / 12%); }
+.welcome-landing-copy h1 {
+  color: #f8f9fa;
+  font-size: clamp(2.75rem, 5.4vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+}
+.welcome-landing-copy h1 em { color: #f8f9fa; }
+.welcome-hook {
+  margin: 14px 0 0 !important;
+  padding: 14px 0 12px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 1.125rem !important;
+  font-weight: 550;
+}
+.welcome-explanation {
+  margin: 12px 0 27px !important;
+  color: #94a3b8 !important;
+  font-size: 1rem !important;
+}
+.welcome-primary-button { background: #3157c8; }
+.welcome-auth-card {
+  border-color: rgb(17 24 39 / 8%);
+  background: #f8f9fa;
+  color: #111827;
+}
+@media (max-width: 760px) {
+  .welcome-experience { background: #262b33; }
+  .welcome-artboard { inset: 80px 8px 8px; }
+  .welcome-header { inset: 8px 8px auto; }
+}
+@media (max-width: 600px) {
+  .dashboard-page > .dashboard-chart { padding: 18px; }
+  .dashboard-chart::before { inset: 8px; }
+  .dashboard-chart-heading h2 { font-size: clamp(2rem, 10vw, 2.6rem); }
+  .dashboard-chart-hook { font-size: 1rem; }
+  .dashboard-chart-explanation { font-size: 0.86rem; }
 }

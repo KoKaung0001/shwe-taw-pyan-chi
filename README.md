@@ -1,6 +1,6 @@
-# FinTech Companion
+# Shwe Taw Pyan Chi
 
-A frontend prototype for everyday financial records in Myanmar. It starts with synthetic MMK sample activity and an unpaid receivable, then persists edits in validated browser storage. Users can create and edit transactions, track explicit receivables, review simulated receipt extraction, ask deterministic questions, and check record completeness. Images stay in the browser tab and are discarded after review; no OCR service is used. Forecasting and scheduled payments remain secondary tools. Never enter real financial information.
+A frontend prototype for everyday financial records in Myanmar. Supabase Auth and Postgres store account workspaces; new accounts start without transactions or receivables. Users can create and edit transactions, track explicit receivables, review simulated receipt extraction, ask deterministic questions, and check record completeness. Images stay in the browser tab and are discarded after review; no OCR service is used. Forecasting and scheduled payments remain secondary tools. Use synthetic or test information only.
 
 ## Run locally
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. For production: `npm run build`, then `npm run preview`. Build output is `dist/`; deploy to a static host. Hash URLs work without server rewrite rules. No environment variables or secrets are needed.
+Configure Supabase using [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) and `.env.local`, then open the local URL printed by Vite. For production: `npm run build`, then `npm run preview`. Build output is `dist/`; deploy to a static host. Hash URLs work without server rewrite rules. Only the Supabase project URL and public anon key are exposed to the frontend; never use a service-role key there.
 
 ## Verify
 
@@ -26,15 +26,15 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-CI runs these checks, audits high-severity dependency advisories and runs a separate Chromium navigation/responsiveness job. Tests cover the five destinations, overflow at 360/768/1280 px, weekly dashboard totals, transaction create/edit/filter/persistence, receivable settlement idempotency, receipt review and confirmation, assistant questions, readiness choices, reset confirmation, malformed-storage recovery and safe text rendering. The CSP check verifies the production HTML policy is stricter than the development policy.
+CI runs these checks, audits high-severity dependency advisories and runs a separate Chromium navigation/responsiveness job. Tests cover financial calculations, transaction and receivable behavior, receipt review, assistant questions, readiness choices, empty initial workspaces, browser import previews, malformed legacy data, and safe text rendering. The CSP check verifies the production HTML policy is stricter than the development policy.
 
-The reviewer-ready acceptance cases for completed milestones are in [TEST_CASES.md](docs/TEST_CASES.md), including manual setup/steps, expected outcomes, automated coverage and current gaps. A short synthetic-data walkthrough is in [DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
+The reviewer-ready Supabase acceptance cases are in [TEST_CASES.md](docs/TEST_CASES.md), including per-user isolation, local import and RLS checks. The prototype walkthrough is in [DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
 
 ## Structure and scope
 
-`src/app` composes routing and layout; `src/components` shared UI; `src/features` financial screens and remaining placeholders; `src/store` validated Zustand persistence; `src/domain` Zod data contracts and pure balance and schedule lifecycle logic; `src/services` injected clock; `src/i18n` English and Burmese skeleton; `e2e` browser checks. React 18, TypeScript, Vite, Tailwind, React Router, lucide-react, react-i18next, Zustand and Zod power the prototype.
+`src/app` composes routing and layout; `src/components` shared UI; `src/features` financial screens and remaining placeholders; `src/store` validated in-memory Zustand state; `src/domain` Zod data contracts and pure balance and schedule lifecycle logic; `src/services` Supabase Auth, typed Postgres access and the legacy import; `e2e` browser checks. React 18, TypeScript, Vite, Tailwind, React Router, Supabase JS, lucide-react, react-i18next, Zustand and Zod power the prototype.
 
-The five primary destinations are Home, Transactions, Add, AI Assistant and Credit Readiness. Add offers manual entry, simulated upload and explicit receivable creation. Receivables stay separate from income until a user marks them paid; settlement creates one linked income record. Settings remains secondary and includes a confirmed demo-data reset. Insights and payment schedules remain accessible as secondary tools. The assistant answers a bounded set of questions from current browser records; readiness checks completeness only and does not upload documents or assess creditworthiness. Mobile uses a five-item bottom navigation bar. No live financial or AI connections are used.
+The five primary destinations are Home, Transactions, Add, AI Assistant and Credit Readiness. Add offers manual entry, simulated upload and explicit receivable creation. Receivables stay separate from income until a user marks them paid; settlement creates one linked income record. Settings remains secondary. Insights and payment schedules remain accessible as secondary tools. The assistant answers a bounded set of questions from the signed-in workspace; readiness checks completeness only and does not upload documents or assess creditworthiness. Mobile uses a five-item bottom navigation bar. Finance records are stored in the signed-in user's Supabase workspace; no bank, wallet, OCR, or AI service is connected.
 
 ## Product behavior and next work
 

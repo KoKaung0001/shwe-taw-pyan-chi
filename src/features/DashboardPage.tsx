@@ -5,14 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { buildFinancialChartSeries, getReportingRange, summarizeOutstanding, summarizePeriod, type ReportingPeriod } from '../domain/reporting';
 import { clockForTimeZone } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
-import { useDemoSession } from '../services/demoAuthSession';
+import { useAuthSession } from '../services/supabaseAuthSession';
 import { FinancialChart, type FinancialChartView } from './FinancialChart';
 
 const money = (amount: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(amount);
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const user = useDemoSession();
+  const { user } = useAuthSession();
   const data = useDemoStore((state) => state.data);
   const timeZone = useDemoStore((state) => state.timeZone);
   const today = clockForTimeZone(timeZone).today();
@@ -49,7 +49,11 @@ export function DashboardPage() {
     </section>
 
     <section className="surface-card dashboard-chart">
-      <div className="section-heading-row"><div><h2>{t('dashboard.chartTitle', { defaultValue: 'Income and expenses' })}</h2><p className="text-muted">{range.startDate} – {range.endDate}</p></div></div>
+      <header className="dashboard-chart-heading">
+        <h2>{t('dashboard.chartTitle', { defaultValue: 'Income and expenses' })}</h2>
+        <p className="dashboard-chart-hook">{t('dashboard.chartHook', { defaultValue: 'See the pace of your cash flow' })}</p>
+        <p className="dashboard-chart-explanation">{t('dashboard.chartExplanation', { startDate: range.startDate, endDate: range.endDate, defaultValue: 'Daily settled income and expenses from {{startDate}} to {{endDate}}.' })}</p>
+      </header>
       <FinancialChart values={financialChart} view={chartView} onViewChange={setChartView} />
     </section>
     <section className="surface-card recent-card">

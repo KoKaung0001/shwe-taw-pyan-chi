@@ -79,10 +79,14 @@ export function FinancialChart({ values, view, onViewChange }: FinancialChartPro
     ? 50
     : (xFor(activeIndex) / chartWidth) * 100;
   const tooltipAlignment = selectedXPercent < 28 ? 'is-left' : selectedXPercent > 72 ? 'is-right' : 'is-center';
-  const tickStep = Math.max(1, Math.ceil((days.length - 1) / 6));
-  const tickIndices = days.map((_, index) => index).filter((index) =>
-    index === 0 || index === days.length - 1 || index % tickStep === 0,
-  );
+  const maxTickCount = days.length <= 7
+    ? days.length
+    : Math.max(2, Math.min(7, Math.floor(plotWidth / 54) + 1));
+  const tickIndices = days.length <= maxTickCount
+    ? days.map((_, index) => index)
+    : Array.from({ length: maxTickCount }, (_, index) =>
+      Math.round((index * (days.length - 1)) / (maxTickCount - 1)),
+    );
   const slotWidth = plotWidth / Math.max(days.length - 1, 1);
   const flowBarWidth = Math.min(12, Math.max(2, slotWidth * 0.32));
   const netExpenseBarWidth = Math.min(18, Math.max(3, slotWidth * 0.56));
@@ -215,7 +219,7 @@ export function FinancialChart({ values, view, onViewChange }: FinancialChartPro
           <path className="financial-chart-net-change-line" d={linePath} />
           {days.map((day, index) => <circle
             key={`point-${day.date}`}
-            className="financial-chart-net-change-point"
+            className={`financial-chart-net-change-point${day.dailyNetChange > 0 ? ' is-positive' : day.dailyNetChange < 0 ? ' is-negative' : ''}${activeIndex === index ? ' is-selected' : ''}`}
             cx={xFor(index)}
             cy={yFor(lineValues[index], topDomain, netChangePlot.top, netChangePlot.bottom)}
             r={days.length > 20 ? 2.5 : 4}
@@ -225,7 +229,7 @@ export function FinancialChart({ values, view, onViewChange }: FinancialChartPro
         {days.map((day, index) => <g
           key={`date-${day.date}`}
           ref={(node) => { pointsRef.current[index] = node; }}
-          className="financial-chart-date-point"
+          className={`financial-chart-date-point${activeIndex === index ? ' is-active' : ''}`}
           role="button"
           tabIndex={activeIndex === index || (activeIndex === null && index === 0) ? 0 : -1}
           aria-label={pointDescription(index)}

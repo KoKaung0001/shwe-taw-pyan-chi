@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
   type FormEvent,
 } from 'react';
@@ -52,28 +51,8 @@ export function SettingsPage() {
           </select>
         </label>
       </section>
-      <ResetDemoPanel />
     </div>
   );
-}
-function ResetDemoPanel() {
-  const { t } = useTranslation();
-  const reset = useDemoStore((state) => state.resetDemoData);
-  const [confirming, setConfirming] = useState(false);
-  const [resetDone, setResetDone] = useState(false);
-  const cancelButtonRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => { if (confirming) cancelButtonRef.current?.focus(); }, [confirming]);
-  return <section className="surface-card settings-panel reset-panel">
-    <h2 className="text-xl font-semibold">{t('settings.resetTitle', { defaultValue: 'Reset demo data' })}</h2>
-    <p className="my-3 text-muted">{t('settings.resetHelp', { defaultValue: 'Restore the prototype’s initial synthetic records. This only changes data saved in this browser.' })}</p>
-    <button className="danger-button" type="button" onClick={() => { setResetDone(false); setConfirming(true); }}>{t('settings.resetAction', { defaultValue: 'Reset demo data' })}</button>
-    {resetDone ? <p className="success-message mt-3" role="status">{t('settings.resetDone', { defaultValue: 'Demo data has been restored.' })}</p> : null}
-    {confirming ? <div className="dialog-backdrop"><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title" aria-describedby="reset-dialog-description">
-      <h3 id="reset-dialog-title">{t('settings.resetConfirmTitle', { defaultValue: 'Reset demo data?' })}</h3>
-      <p id="reset-dialog-description">{t('settings.resetConfirmBody', { defaultValue: 'Your saved changes in this browser will be replaced with the initial synthetic dataset.' })}</p>
-      <div className="dialog-actions"><button ref={cancelButtonRef} className="secondary-action" type="button" onClick={() => setConfirming(false)}>{t('form.cancel')}</button><button className="danger-button" type="button" onClick={() => { reset(); setConfirming(false); setResetDone(true); }}>{t('settings.resetAction', { defaultValue: 'Reset demo data' })}</button></div>
-    </section></div> : null}
-  </section>;
 }
 
 export function SchedulesPage() {

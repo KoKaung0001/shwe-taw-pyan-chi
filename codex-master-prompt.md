@@ -1,4 +1,4 @@
-# FinTech Companion — implementation guide
+# Shwe Taw Pyan Chi — implementation guide
 
 The user's explicit instructions take precedence. The latest agreed business contract is [docs/DECISIONS.md](docs/DECISIONS.md); the reconciled requirements and milestone order are [docs/FinTech_PRD_SRS.md](docs/FinTech_PRD_SRS.md). Read both before changes. The original supplied drafts are superseded by these reconciled documents.
 

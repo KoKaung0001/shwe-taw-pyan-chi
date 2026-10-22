@@ -1,12 +1,10 @@
 {
-  "brand": "FinTech Companion",
+  "brand": "Shwe Taw Pyan Chi",
   "tagline": "A clearer view of your money",
-  "demo": "Demo mode: simulated data. Do not enter real financial information.",
+  "demo": "Prototype account. Use test information only; do not enter real financial information.",
   "skip": "Skip to content",
   "navigation": "Main navigation",
   "quickNavigation": "Quick navigation",
-  "demoWorkspace": "Personal workspace",
-  "demoMode": "Synthetic data",
   "dismissNavigation": "Dismiss navigation",
   "menu": "Menu",
   "close": "Close menu",
@@ -57,7 +55,7 @@
   "error": "Something went wrong",
   "errorBody": "Reload the prototype to try again.",
   "reload": "Reload",
-  "footer": "Built for everyday clarity. Synthetic data only.",
+  "footer": "Built for everyday clarity. Prototype and test use only.",
   "dismiss": "Dismiss",
   "form": {
     "amountError": "Enter a whole MMK amount within the supported limit.",
@@ -161,6 +159,8 @@
     "receivablesHelp": "Unpaid amounts owed to you, separate from expenses.",
     "netHelp": "Recorded income minus recorded expenses; not a bank balance.",
     "chartTitle": "Income and expenses",
+    "chartHook": "See the pace of your cash flow",
+    "chartExplanation": "Daily settled income and expenses from {{startDate}} to {{endDate}}.",
     "chartAccessible": "Daily income, expenses, and cumulative net change from {{startDate}} to {{endDate}}.",
     "cashFlowChartAccessible": "Daily income and expense bars from {{startDate}} to {{endDate}}.",
     "netChangeChartAccessible": "Daily cumulative net change line and expense bars from {{startDate}} to {{endDate}}.",
@@ -278,7 +278,7 @@
   "chat": {
     "title": "Ask about your records",
     "nav": "AI Assistant",
-    "demoLabel": "Demo assistant",
+    "demoLabel": "Record assistant",
     "suggestionsTitle": "Try asking",
     "suggestedQuestions": [
       "What is my income this week?",
@@ -292,8 +292,8 @@
     "noWeeklyTransactionsAnswer": "There are no settled expenses this week ({{startDate}} to {{endDate}}).",
     "noWeeklyIncomeAnswer": "There is no settled income this week ({{startDate}} to {{endDate}}).",
     "receivablesAnswer": "You have {{amount}} MMK in {{count}} unpaid receivable(s).",
-    "description": "A rule-based demo grounded in records saved in this browser.",
-    "limits": "Rule-based demo only. Answers use records currently saved in this browser. Unsupported questions and requests for financial, legal or tax advice are declined.",
+    "description": "A rule-based assistant grounded in your signed-in records.",
+    "limits": "Answers use records in your signed-in workspace. Unsupported questions and requests for financial, legal or tax advice are declined.",
     "questionLabel": "Ask about your records",
     "questionPlaceholder": "For example: What do I owe?",
     "ask": "Ask",
@@ -317,61 +317,50 @@
     ]
   },
   "readiness": {
-    "title": "Prepare your records",
+    "title": "Credit readiness",
     "nav": "Credit Readiness",
-    "description": "Review record checks and your supporting-document checklist.",
-    "description": "Review how complete your records are and keep track of supporting documents.",
-    "disclaimer": "This checklist describes records you have entered or say you have available. It is not a credit score, creditworthiness assessment, or loan approval prediction. No document files are uploaded here.",
-    "recordChecksTitle": "Record checks",
-    "recordChecksHelp": "",
-    "documentsTitle": "Supporting document checklist",
-    "documentsHelp": "Checklist status only. Document files are not uploaded or stored.",
-    "checkCount": "{{completed}} of {{total}} complete",
-    "categorizedCount": "{{categorized}} of {{total}} transaction(s) have a category.",
-    "checkStatus": {
-      "complete": "Present in your records.",
-      "missing": "Not found in your records yet."
+    "description": "Choose a bank to see how your existing records match its example requirements.",
+    "disclaimer": "These bank requirements are user-provided examples and have not been confirmed by the lenders. FlowScore is an app-only cash-flow indicator, not a bank score, creditworthiness assessment, or loan approval prediction.",
+    "chooseBank": "1. Choose a target bank",
+    "chooseBankHelp": "Select one of the example bank profiles to review its checklist.",
+    "bankOptions": "Target bank",
+    "stepTwo": "2. Review checklist",
+    "checklistReady": "checklist ready",
+    "checklistProgress": "Bank checklist completion",
+    "userReported": "You marked this available",
+    "appAlternativeAvailable": "App-generated alternative available",
+    "incomplete": "Incomplete",
+    "monthCoverage": "Settled records currently cover {{months}} of 12 months.",
+    "lenderAcceptance": "Lender acceptance is not confirmed.",
+    "documentAvailable": "I have this document: {{name}}",
+    "available": "Available",
+    "selfReportedHelp": "Checked documents are self-reported. No document files are uploaded or stored.",
+    "flowScoreTitle": "App-only FlowScore",
+    "flowScoreHelp": "A transparent cash-flow indicator based on your last 12 months of settled records. It is not a bank score, creditworthiness assessment, or approval likelihood.",
+    "scoreUnavailable": "Not enough history",
+    "outOfHundred": "out of 100",
+    "scoreNeedsMonths": "A FlowScore appears after settled records span at least 6 distinct months. Current coverage: {{active}} of 12 months.",
+    "components": {
+      "historyCoverage": "History coverage",
+      "incomeConsistency": "Monthly income consistency",
+      "netCashFlowStability": "Net cash-flow stability",
+      "reviewedReceiptEvidence": "Reviewed receipt evidence"
     },
-    "checks": {
-      "income_records": "Income records available",
-      "expense_records": "Expense records available",
-      "receipt_evidence": "Receipt evidence available",
-      "transaction_complete": "Transaction records reasonably complete",
-      "identity_document": "Identity-document availability recorded",
-      "invoice_payment_evidence": "Invoice or payment evidence available"
-    },
-    "documents": {
-      "identity_document": "Identity-document availability",
-      "invoice_payment_evidence": "Invoice or payment evidence"
-    },
-    "transactionsAction": "Review transactions",
-    "missingSummary": "Still missing:",
-    "nextStep": "Add or review records to update these checks.",
-    "allComplete": "All six readiness items are complete.",
-    "addAction": "Add a record",
-    "status": {
-      "complete": "Complete",
-      "missing": "Missing"
-    },
-    "items": [
-      "Record-completeness checks",
-      "Supporting document checklist",
-      "Clear explanations of missing information"
-    ]
+    "receiptCoverage": "Receipt evidence: {{reviewed}} reviewed of {{total}} settled receipt or screenshot records.",
+    "summaryTitle": "Transaction summary",
+    "summaryCoverage": "{{active}} of 12 months contain settled records - {{count}} records",
+    "export": "Export loan application kit",
+    "income": "Income",
+    "expenses": "Expenses",
+    "net": "Net cash flow",
+    "reportHelp": "The one-page PDF contains a transaction summary, checklist, record coverage, and limitations. It does not include original receipt images."
   },
   "settings": {
     "title": "Settings",
     "nav": "Settings",
     "timeZone": "Time zone",
-    "resetTitle": "Reset demo data",
-    "resetAction": "Reset demo data",
-    "resetHelp": "Restore the prototype’s initial synthetic records. This only changes data saved in this browser.",
-    "resetConfirmTitle": "Reset demo data?",
-    "resetConfirmBody": "Your saved changes in this browser will be replaced with the initial synthetic dataset.",
-    "resetDone": "Demo data has been restored.",
     "items": [
-      "Time zone preference",
-      "Synthetic data reset"
+      "Time zone preference"
     ]
   }
 }

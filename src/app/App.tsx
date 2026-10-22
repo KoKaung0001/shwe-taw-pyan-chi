@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import type { TFunction } from 'i18next';
-import { FlaskConical, LogOut, Plus } from 'lucide-react';
+import { Check, LogOut, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { primaryDestinations, screens, utilityDestinations } from './routes';
 import { Placeholder } from '../features/Placeholder';
@@ -11,6 +11,7 @@ import { DashboardPage } from '../features/DashboardPage';
 import { ChatPage } from '../features/AnalysisPages';
 import { ReadinessPage } from '../features/ReadinessPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { BrandWordmark } from '../components/BrandWordmark';
 import { useDemoStore } from '../store/demoStore';
 import {
   SchedulesPage,
@@ -19,19 +20,11 @@ import {
 } from '../features/FinancialPages';
 import { MorePage } from '../features/MorePage';
 import { WelcomeExperience } from '../features/WelcomeExperience';
-import { setDemoSession, useDemoSession } from '../services/demoAuthSession';
-
-function ScrollMark({ className = '' }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 40 40" fill="none" className={className}>
-      <path
-        d="M11 9.5h18a3.5 3.5 0 0 1 0 7H14.5a3.5 3.5 0 0 0 0 7H29a3.5 3.5 0 0 1 0 7H11a3.5 3.5 0 0 1 0-7h14.5a3.5 3.5 0 0 0 0-7H11a3.5 3.5 0 0 1 0-7Z"
-        stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
-      />
-      <path d="M8 13V27" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { setAuthUser, startAuthSession, useAuthSession } from '../services/supabaseAuthSession';
+import { signOut } from '../services/supabaseAuth';
+import { emptyAppData } from '../domain/types';
+import { getImportStatus, getLocalImportCandidate, importLocalWorkspace, loadWorkspace, saveWorkspace, skipLocalWorkspaceImport } from '../services/workspaceRepository';
+import { useState } from 'react';
 
 function routeName(pathname: string, t: TFunction) {
   if (pathname === '/') return t('brand');
@@ -47,35 +40,118 @@ function routeName(pathname: string, t: TFunction) {
 export function App() {
   const { t } = useTranslation();
   const storageNotice = useDemoStore((state) => state.storageNotice);
-  const user = useDemoSession();
+  const { user, loading: authLoading, error: authError } = useAuthSession();
   const location = useLocation();
   const navigate = useNavigate();
   const previousPath = useRef(location.pathname);
+  const [workspaceLoad, setWorkspaceLoad] = useState<{ userId: string | null; ready: boolean; error: string | null }>({ userId: null, ready: false, error: null });
+  const workspaceReady = Boolean(user && workspaceLoad.userId === user.id && workspaceLoad.ready);
+  const workspaceError = user && workspaceLoad.userId === user.id ? workspaceLoad.error : null;
+  const [importCandidate, setImportCandidate] = useState<Awaited<ReturnType<typeof getLocalImportCandidate>>>(null);
+  const [importBusy, setImportBusy] = useState(false);
+
+  useEffect(() => startAuthSession(), []);
 
   useEffect(() => {
     if (previousPath.current !== location.pathname) {
       document.querySelector<HTMLElement>('h1')?.focus();
       previousPath.current = location.pathname;
     }
-    document.title = `${routeName(location.pathname, t)} · ${t('brand')}`;
+    document.title = location.pathname === '/'
+      ? t('brand')
+      : `${routeName(location.pathname, t)} · ${t('brand')}`;
   }, [location.pathname, t]);
 
   useEffect(() => {
-    const process = () => useDemoStore.getState().processDueSchedules();
-    if (useDemoStore.persist.hasHydrated()) {
-      process();
+    if (!user) {
+      useDemoStore.setState({ data: emptyAppData(), storageNotice: null });
       return;
     }
-    return useDemoStore.persist.onFinishHydration(process);
-  }, []);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const workspace = await loadWorkspace(user.id);
+        if (cancelled) return;
+        useDemoStore.setState(workspace);
+        const status = await getImportStatus(user.id);
+        if (cancelled) return;
+        const candidate = status ? null : await getLocalImportCandidate(user.email);
+        if (cancelled) return;
+        useDemoStore.getState().processDueSchedules();
+        if (!candidate) {
+          const current = useDemoStore.getState();
+          await saveWorkspace(user.id, { data: current.data, storageNotice: null, timeZone: current.timeZone });
+          if (cancelled) return;
+        }
+        setImportCandidate(candidate);
+        setWorkspaceLoad({ userId: user.id, ready: true, error: null });
+      } catch (error) {
+        if (!cancelled) setWorkspaceLoad({ userId: user.id, ready: false, error: error instanceof Error ? error.message : 'Could not load your account records.' });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !workspaceReady || importCandidate) return;
+    let queue = Promise.resolve();
+    let active = true;
+    const unsubscribe = useDemoStore.subscribe((state, previous) => {
+      if (!active || (state.data === previous.data && state.timeZone === previous.timeZone)) return;
+      const snapshot = { data: state.data, timeZone: state.timeZone, storageNotice: null };
+      queue = queue.then(() => active ? saveWorkspace(user.id, snapshot) : undefined).catch((error: unknown) => {
+        if (active) useDemoStore.setState({ storageNotice: error instanceof Error ? `Could not sync your records: ${error.message}` : 'Could not sync your records.' });
+      });
+    });
+    return () => { active = false; unsubscribe(); };
+  }, [user, workspaceReady, importCandidate]);
+
+  async function confirmImport() {
+    if (!user || !importCandidate || importBusy) return;
+    setImportBusy(true);
+    try {
+      const workspace = await importLocalWorkspace(user.id, user.email, importCandidate.workspace);
+      useDemoStore.setState(workspace);
+      useDemoStore.getState().processDueSchedules();
+      const current = useDemoStore.getState();
+      await saveWorkspace(user.id, { data: current.data, storageNotice: null, timeZone: current.timeZone });
+      setImportCandidate(null);
+    } catch (error) {
+      setWorkspaceLoad({ userId: user.id, ready: true, error: error instanceof Error ? error.message : 'Could not import the local workspace. You can retry.' });
+    } finally { setImportBusy(false); }
+  }
+
+  async function skipImport() {
+    if (!user || importBusy) return;
+    setImportBusy(true);
+    try {
+      await skipLocalWorkspaceImport(user.id, user.email);
+      setImportCandidate(null);
+    } catch (error) {
+      setWorkspaceLoad({ userId: user.id, ready: true, error: error instanceof Error ? error.message : 'Could not save your import choice.' });
+    } finally { setImportBusy(false); }
+  }
+
+  async function signOutAndLeave() {
+    if (!user) return;
+    try {
+      const current = useDemoStore.getState();
+      await saveWorkspace(user.id, { data: current.data, storageNotice: null, timeZone: current.timeZone });
+      await signOut();
+      navigate('/', { replace: true });
+    } catch (error) {
+      setWorkspaceLoad({ userId: user.id, ready: true, error: error instanceof Error ? error.message : 'Could not sign out. Your latest changes may not have synced.' });
+    }
+  }
 
   if (location.pathname === '/' || location.pathname === '/auth' || location.pathname === '/signup') {
     return <WelcomeExperience onAuthenticated={async (authenticatedUser) => {
-      await useDemoStore.getState().activateWorkspace(authenticatedUser.email);
-      setDemoSession(authenticatedUser);
+      setAuthUser(authenticatedUser);
     }} />;
   }
+  if (authLoading) return <main className="min-h-screen grid place-items-center p-8"><p role="status">Connecting to your account…</p></main>;
   if (!user) return <Navigate to="/" replace />;
+  if (!workspaceReady) return <main className="min-h-screen grid place-items-center p-8"><p role="status">{workspaceError ?? authError ?? 'Loading your records…'}</p></main>;
 
   return (
     <>
@@ -91,11 +167,12 @@ export function App() {
           </button>
         </div>
       ) : null}
+      {workspaceError && !importCandidate ? <div className="storage-notice" role="alert"><span>{workspaceError}</span></div> : null}
       <div className="app-frame">
         <aside id="app-navigation" className="app-sidebar">
           <Link to="/dashboard" className="brand-lockup">
-            <span className="brand-symbol"><ScrollMark className="size-7" /></span>
-            <span className="brand-name">{t('brand')}</span>
+            <span className="brand-symbol" aria-hidden="true" />
+            <BrandWordmark className="brand-name" />
           </Link>
           <div className="sidebar-caption">{t('navigation')}</div>
           <nav aria-label={t('navigation')} className="primary-navigation">
@@ -119,18 +196,12 @@ export function App() {
 
         <div className="app-main-column">
           <header className="topbar">
-            <Link to="/dashboard" className="mobile-brand lg:hidden">
-              <span className="brand-symbol"><ScrollMark className="size-6" /></span>
-              <span>{t('brand')}</span>
+            <Link to="/dashboard" className="mobile-brand lg:hidden" aria-label={t('brand')}>
+              <span className="brand-symbol" aria-hidden="true" />
+              <BrandWordmark className="mobile-brand-name" />
             </Link>
             <div className="topbar-actions">
-              <span className="demo-badge" title={t('demo')} aria-label={t('demo')}>
-                <FlaskConical size={14} aria-hidden="true" />{t('demoMode', { defaultValue: 'Synthetic data' })}
-              </span>
-              <button className="sign-out-action" type="button" onClick={() => {
-                setDemoSession(null);
-                navigate('/', { replace: true });
-              }}><LogOut size={16} aria-hidden="true" /><span>Sign out</span></button>
+              <button className="sign-out-action" type="button" onClick={() => void signOutAndLeave()}><LogOut size={16} aria-hidden="true" /><span>Sign out</span></button>
               <Link className="record-action" to="/add">
                 <Plus size={18} aria-hidden="true" /><span>{t('add.nav')}</span>
               </Link>
@@ -179,6 +250,14 @@ export function App() {
           </nav>
         </div>
       </div>
+      {importCandidate ? <div className="dialog-backdrop"><section className="confirm-dialog workspace-import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title" aria-describedby="import-description">
+        <div className="welcome-auth-check"><Check size={17} aria-hidden="true" /></div>
+        <h2 id="import-title">Import this browser’s saved records?</h2>
+        <p id="import-description">We found a local workspace for {user.email}. Review the counts, then import it once. This includes sample records and does not include the older shared workspace.</p>
+        <ul className="workspace-import-counts">{Object.entries(importCandidate.counts).filter(([, count]) => count > 0).map(([label, count]) => <li key={label}><span>{label.replaceAll(/([A-Z])/g, ' $1')}</span><strong>{count}</strong></li>)}</ul>
+        {workspaceError ? <p role="alert" className="welcome-auth-message">{workspaceError}</p> : null}
+        <div className="dialog-actions"><button className="secondary-action" type="button" disabled={importBusy} onClick={() => void skipImport()}>Start empty</button><button className="primary-action" type="button" disabled={importBusy} onClick={() => void confirmImport()}>{importBusy ? 'Working…' : 'Import records'}</button></div>
+      </section></div> : null}
     </>
   );
 }

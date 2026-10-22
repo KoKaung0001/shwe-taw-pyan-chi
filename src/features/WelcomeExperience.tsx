@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { ArrowRight, Check, LockKeyhole, ReceiptText, WalletCards } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  LockKeyhole,
+  ReceiptText,
+  WalletCards,
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { authenticateDemoAccount, createDemoAccount, DemoAuthError, type DemoUser } from '../services/demoAuth';
+import { BrandWordmark } from '../components/BrandWordmark';
+import { signIn, signUp, type AuthenticatedUser } from '../services/supabaseAuth';
 
 type ScenePhase = 'landing' | 'collecting' | 'organizing' | 'ready';
 
@@ -16,7 +23,7 @@ const objects = [
   { kind: 'note', title: 'Groceries', detail: '24,000 MMK', icon: WalletCards, left: 92, top: 75, rotation: 8 },
 ] as const;
 
-export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user: DemoUser) => Promise<void> | void }) {
+export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user: AuthenticatedUser) => Promise<void> | void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,25 +79,24 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
     const form = new FormData(event.currentTarget);
     try {
       const user = isSignup
-        ? await createDemoAccount({
+        ? await signUp({
             name: String(form.get('name') ?? ''),
             email: String(form.get('email') ?? ''),
             password: String(form.get('password') ?? ''),
           })
-        : await authenticateDemoAccount({
+        : await signIn({
             email: String(form.get('email') ?? ''),
             password: String(form.get('password') ?? ''),
           });
       await onAuthenticated(user);
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      if (error instanceof DemoAuthError) {
-        if (error.code === 'email_taken') setMessage('An account already exists for this email. Log in instead.');
-        else if (error.code === 'invalid_credentials') setMessage('Email or password is incorrect.');
-        else setMessage('Local account storage is unavailable in this browser. Check your browser storage settings and try again.');
-      } else {
-        setMessage('Could not complete that request. Please try again.');
-      }
+      const detail = error instanceof Error ? error.message : '';
+      if (/not configured/i.test(detail)) setMessage('Accounts are not configured yet. Add the Supabase project URL and public anon key to the app environment.');
+      else if (/check your email to confirm/i.test(detail)) setMessage(detail);
+      else if (/already registered|already exists/i.test(detail)) setMessage('An account already exists for this email. Log in instead.');
+      else if (/invalid login credentials/i.test(detail)) setMessage('Email or password is incorrect.');
+      else setMessage('Could not complete that request. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -101,8 +107,8 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
   return <main className={sceneClass}>
     <header className="welcome-header">
       <Link to="/" className="welcome-brand" aria-label={`${brand} home`} onClick={() => setPhase('landing')}>
-        <span className="welcome-brand-mark"><span /></span>
-        <span>{brand}</span>
+        <span className="welcome-brand-mark" aria-hidden="true" />
+        <BrandWordmark className="welcome-brand-name" />
       </Link>
       <span className="welcome-header-note">A clearer view of your money</span>
     </header>
@@ -121,9 +127,9 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
     </div>
 
     <section className="welcome-landing-copy" aria-labelledby="welcome-heading">
-      <span className="welcome-eyebrow"><span /> Your finances, in one place</span>
       <h1 id="welcome-heading">Bring your money <em>together.</em></h1>
-      <p>Make sense of every little spend and every bit of income, all in one calm place.</p>
+      <p className="welcome-hook">Your finances, in one place</p>
+      <p className="welcome-explanation">Make sense of every little spend and every bit of income, all in one calm place.</p>
       <button className="welcome-primary-button" type="button" onClick={begin} disabled={phase !== 'landing'}>
         Get Started <ArrowRight size={18} aria-hidden="true" />
       </button>
@@ -140,7 +146,7 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
         <label>Password<input autoComplete={isSignup ? 'new-password' : 'current-password'} name="password" type="password" placeholder="Enter your password" minLength={8} required /></label>
         <button className="welcome-primary-button welcome-auth-submit" type="submit" disabled={submitting}>{submitting ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}<ArrowRight size={17} aria-hidden="true" /></button>
       </form>
-      <p className="welcome-auth-switch">{isSignup ? 'Already have an account?' : 'New to FinTech Companion?'} <Link to={isSignup ? '/auth' : '/signup'}>{isSignup ? 'Log in' : 'Sign up'}</Link></p>
+      <p className="welcome-auth-switch">{isSignup ? 'Already have an account?' : <>New to <BrandWordmark inline />?</>} <Link to={isSignup ? '/auth' : '/signup'}>{isSignup ? 'Log in' : 'Sign up'}</Link></p>
       {message ? <p className="welcome-auth-message" role="status">{message}</p> : null}
     </section>
 

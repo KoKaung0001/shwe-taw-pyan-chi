@@ -1,8 +1,10 @@
-# FinTech Companion — reconciled PRD/SRS
+# Shwe Taw Pyan Chi — reconciled PRD/SRS
 
 21 October 2026. Scope: frontend prototype for Myanmar freelancers, gig workers, online sellers and small businesses; one shared workflow. Survey of 27 respondents supports investigating fragmented records, not claims of validated demand or creditworthiness. Target buildathon date: 23 October; milestone acceptance takes priority over calendar promises.
 
 Behavioral contract: [DECISIONS.md](DECISIONS.md), including its explicit distinction between agreed decisions and implementation assumptions.
+
+Current implementation update (22 October 2026): the Supabase Auth/Postgres and no-runtime-seeding decisions in [DECISIONS.md](DECISIONS.md) supersede earlier exclusions of backend/auth and sample-data defaults below. This document retains the historical milestone requirements for product behavior.
 
 ## Functional requirements (future implementation unless M0)
 

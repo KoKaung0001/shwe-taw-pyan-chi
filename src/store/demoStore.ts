@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
+import { persist, type StateStorage } from 'zustand/middleware';
 import {
   emptyAppData,
   appDataSchema,
@@ -17,9 +17,14 @@ import {
   receivableSchema,
 } from '../domain/types';
 import type { ReadinessDocumentId } from '../domain/readiness';
+import {
+  bankChecklistKey,
+  getBankDefinition,
+  type BankRequirementId,
+  type ReadinessBankId,
+} from '../domain/creditReadiness';
 import { processSchedules } from '../domain/scheduleLifecycle';
 import { clockForTimeZone, systemClock, type Clock } from '../services/clock';
-import { createSeedData } from '../domain/seedData';
 import {
   browserStorage,
   createSafeJsonStorage,
@@ -28,13 +33,11 @@ import {
 } from './persistence';
 
 export interface DemoStore extends PersistedStore {
-  activateWorkspace(email: string): Promise<void>;
   setTimeZone(timeZone: string): void;
   replaceData(data: AppData): void;
   saveTransaction(transaction: Transaction): void;
   createReceivable(receivable: Receivable): void;
   settleReceivable(id: string): void;
-  resetDemoData(): void;
   deleteTransaction(id: string): Transaction | null;
   restoreTransaction(transaction: Transaction): void;
   createScheduleRule(rule: ScheduledRule, clock?: Clock): void;
@@ -43,46 +46,26 @@ export interface DemoStore extends PersistedStore {
   markOccurrenceUnpaid(occurrenceId: string): void;
   resolveDuplicate(review: DuplicateReview): void;
   setReadinessDocument(id: ReadinessDocumentId, available: boolean): void;
+  setBankReadinessDocument(bankId: ReadinessBankId, requirementId: BankRequirementId, available: boolean): void;
   dismissStorageNotice(): void;
-}
-
-function workspaceHasNoUserData(data: AppData) {
-  const defaults = emptyAppData().categories;
-  const hasDefaultCategories = data.categories.length === defaults.length && defaults.every((category) =>
-    data.categories.some((candidate) => candidate.id === category.id && candidate.name === category.name && candidate.type === category.type),
-  );
-  // A user-entered opening balance alone does not mean the workspace has activity;
-  // preserve it while adding the sample transactions to otherwise empty accounts.
-  return data.transactions.length === 0 && data.balanceAdjustments.length === 0 &&
-    data.receivables.length === 0 && data.counterparties.length === 0 && data.scheduleRules.length === 0 &&
-    data.paymentOccurrences.length === 0 && data.duplicateReviews.length === 0 &&
-    Object.keys(data.checklist).length === 0 && hasDefaultCategories;
 }
 
 export function createDemoStore(
   backingStorage: StateStorage = browserStorage,
-  options: { skipHydration?: boolean; seedInitialData?: boolean } = {},
+  options: { skipHydration?: boolean } = {},
 ) {
   const localTimeZone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Rangoon';
   const jsonStorage = createSafeJsonStorage(backingStorage, (message) => {
     store.setState({ storageNotice: message });
   });
-  const volatileStorage = createJSONStorage(() => ({
-    getItem: async () => null,
-    setItem: async () => {},
-    removeItem: async () => {},
-  }));
-  let activeStorageKey = STORAGE_KEY;
-  let activateWorkspace: (email: string) => Promise<void> = async () => {};
 
   const store = create<DemoStore>()(
     persist(
       (set, get) => ({
-        data: options.seedInitialData ? createSeedData() : emptyAppData(),
+        data: emptyAppData(),
         storageNotice: null,
         timeZone: localTimeZone,
-        activateWorkspace: (email) => activateWorkspace(email),
         setTimeZone: (timeZone) => {
           if (!isValidTimeZone(timeZone))
             throw new Error('Choose a valid time zone.');
@@ -196,10 +179,6 @@ export function createDemoStore(
               updatedAt: timestamp,
             } : item),
           }) });
-        },
-        resetDemoData: () => {
-          const openingBalance = get().data.openingBalance;
-          set({ data: { ...createSeedData(), openingBalance } });
         },
         deleteTransaction: (id): Transaction | null => {
           const current = get().data;
@@ -426,6 +405,21 @@ export function createDemoStore(
             }),
           });
         },
+        setBankReadinessDocument: (bankId, requirementId, available) => {
+          const requirement = getBankDefinition(bankId).requirements.find(
+            (item) => item.id === requirementId,
+          );
+          if (!requirement || requirement.proof !== 'self_reported')
+            throw new Error('Only user-reported bank documents can be checked manually.');
+          const current = get().data;
+          const key = bankChecklistKey(bankId, requirementId);
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              checklist: { ...current.checklist, [key]: available },
+            }),
+          });
+        },
         dismissStorageNotice: () => set({ storageNotice: null }),
       }),
       {
@@ -447,7 +441,7 @@ export function createDemoStore(
           if (persisted === null || persisted === undefined) return current;
           const result = persistedStoreSchema.safeParse(persisted);
           if (!result.success) {
-            void Promise.resolve(backingStorage.removeItem(activeStorageKey)).catch(
+            void Promise.resolve(backingStorage.removeItem(STORAGE_KEY)).catch(
               () => {},
             );
             return {
@@ -470,7 +464,7 @@ export function createDemoStore(
         },
         onRehydrateStorage: () => (_state, error) => {
           if (error) {
-            void Promise.resolve(backingStorage.removeItem(activeStorageKey)).catch(
+            void Promise.resolve(backingStorage.removeItem(STORAGE_KEY)).catch(
               () => {},
             );
             store.setState({
@@ -483,20 +477,13 @@ export function createDemoStore(
       },
     ),
   );
-  activateWorkspace = async (email) => {
-    const normalized = email.trim().toLocaleLowerCase('en-US');
-    if (!normalized) throw new Error('An account email is required to open its finance workspace.');
-    activeStorageKey = `${STORAGE_KEY}:account:${encodeURIComponent(normalized)}`;
-    store.persist.setOptions({ name: activeStorageKey, storage: volatileStorage });
-    store.setState({ data: emptyAppData(), storageNotice: null });
-    store.persist.setOptions({ name: activeStorageKey, storage: jsonStorage });
-    await store.persist.rehydrate();
-    const state = store.getState();
-    if (!state.storageNotice && workspaceHasNoUserData(state.data)) {
-      store.setState({ data: { ...createSeedData(), openingBalance: state.data.openingBalance } });
-    }
-  };
   return store;
 }
 
-export const useDemoStore = createDemoStore(browserStorage, { seedInitialData: true, skipHydration: true });
+const memoryValues = new Map<string, string>();
+const appMemoryStorage: StateStorage = {
+  getItem: async (key) => memoryValues.get(key) ?? null,
+  setItem: async (key, value) => { memoryValues.set(key, value); },
+  removeItem: async (key) => { memoryValues.delete(key); },
+};
+export const useDemoStore = createDemoStore(appMemoryStorage, { skipHydration: true });

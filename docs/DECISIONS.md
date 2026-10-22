@@ -2,6 +2,10 @@
 
 Updated 22 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M8 are complete; review M8 before any P2 scope is considered.
 
+### Supabase and seed-data amendment (22 October 2026)
+
+The current request supersedes earlier prototype-only storage decisions: Supabase Auth and per-user Postgres tables with RLS are now the persistence boundary; new accounts start without transaction or receivable seed records; remove the in-app demo reset. Keep seed fixtures only for tests. Preserve existing per-email browser workspaces for explicit one-time import after authentication, including their sample records. Leave the unattributed shared legacy workspace untouched. Use synthetic/test data only; this does not authorize real financial records.
+
 ## Agreed product decisions
 
 1. First use collects an opening balance and reference date/time. Carry forward automatically; do not ask for daily balances. Net cash movement means recorded income minus recorded expenses in a period. Recorded available balance means opening balance plus applicable movements after its reference point, not a verified bank balance.

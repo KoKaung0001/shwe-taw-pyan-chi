@@ -20,8 +20,8 @@ export default defineConfig({
         handler(html) {
           return html
             .replace(
-              "connect-src 'self';",
-              "connect-src 'self' ws://127.0.0.1:*;",
+              "connect-src 'self' https://*.supabase.co;",
+              "connect-src 'self' https://*.supabase.co ws://127.0.0.1:*;",
             )
             .replace("style-src 'self';", "style-src 'self' 'unsafe-inline';");
         },

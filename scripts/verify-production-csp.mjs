@@ -15,7 +15,7 @@ for (const directive of [
   "img-src 'self' data: blob:",
   "style-src 'self'",
   "script-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.supabase.co",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

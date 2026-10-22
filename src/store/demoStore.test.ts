@@ -29,24 +29,15 @@ const exampleData = (): AppData => ({
   },
 });
 
-describe('versioned demo persistence', () => {
-  it('isolates account workspaces and leaves the legacy shared workspace untouched', async () => {
+describe('workspace persistence', () => {
+  it('starts new workspaces empty and leaves the old shared workspace untouched', async () => {
     const { storage, values } = memoryStorage();
     const legacy = JSON.stringify({ version: PERSISTENCE_VERSION, state: { oldSharedRecords: true } });
     values.set(STORAGE_KEY, legacy);
-    const accountKey = `${STORAGE_KEY}:account:${encodeURIComponent('one@example.com')}`;
-    values.set(accountKey, JSON.stringify({ version: PERSISTENCE_VERSION, state: { data: exampleData(), storageNotice: null, timeZone: 'Asia/Rangoon' } }));
     const store = createDemoStore(storage, { skipHydration: true });
-    await store.getState().activateWorkspace('One@Example.com');
-    expect(store.getState().data.openingBalance?.amount).toBe(125_000);
-    expect(store.getState().data.transactions).toHaveLength(21);
-    await store.getState().activateWorkspace('two@example.com');
-    expect(store.getState().data.openingBalance).toBeNull();
-    expect(store.getState().data.transactions).toHaveLength(21);
-    await store.getState().activateWorkspace('two@example.com');
-    expect(store.getState().data.transactions).toHaveLength(21);
+    expect(store.getState().data.transactions).toHaveLength(0);
+    expect(store.getState().data.receivables).toHaveLength(0);
     expect(values.get(STORAGE_KEY)).toBe(legacy);
-    expect([...values.keys()].filter((key) => key.startsWith(`${STORAGE_KEY}:account:`))).toHaveLength(2);
   });
   it('preserves legacy opening balance, adjustments and transaction classifications while ignoring them in new flows', async () => {
     const { storage } = memoryStorage();
@@ -66,15 +57,6 @@ describe('versioned demo persistence', () => {
     expect(restored.getState().data.balanceAdjustments).toEqual(legacyData.balanceAdjustments);
     expect(restored.getState().data.transactions[0].openingDayDisposition).toBe('already_in_opening');
   });
-  it('refreshes the example transactions without overwriting the user-entered opening balance', () => {
-    const store = createDemoStore(memoryStorage().storage, { skipHydration: true });
-    store.getState().replaceData(exampleData());
-    store.getState().resetDemoData();
-    expect(store.getState().data.openingBalance).toEqual(exampleData().openingBalance);
-    expect(store.getState().data.transactions).toHaveLength(21);
-    expect(store.getState().data.balanceAdjustments).toHaveLength(0);
-  });
-
   it('settles each explicit receivable into exactly one linked income record', () => {
     const store = createDemoStore(memoryStorage().storage, { skipHydration: true });
     const now = '2026-10-21T08:00:00Z';
@@ -96,6 +78,17 @@ describe('versioned demo persistence', () => {
     const restored = createDemoStore(storage, { skipHydration: true });
     await restored.persist.rehydrate();
     expect(restored.getState().data.checklist.identity_document).toBe(true);
+  });
+
+  it('persists bank-specific self-reported readiness documents without changing the storage schema', async () => {
+    const { storage } = memoryStorage();
+    const store = createDemoStore(storage, { skipHydration: true });
+    await store.persist.rehydrate();
+    store.getState().setBankReadinessDocument('yoma', 'business_license', true);
+    const restored = createDemoStore(storage, { skipHydration: true });
+    await restored.persist.rehydrate();
+    expect(restored.getState().data.checklist['bank.yoma.business_license']).toBe(true);
+    expect(() => restored.getState().setBankReadinessDocument('mcb', 'profit_loss', true)).toThrow(/only user-reported/i);
   });
 
   it('starts with an empty workspace without reporting corrupt saved data', async () => {

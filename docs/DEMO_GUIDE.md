@@ -1,20 +1,19 @@
-# FinTech Companion demo guide
+# Prototype walkthrough
 
-Use synthetic information only. This local prototype does not connect to a bank, wallet, OCR service or AI service. A full walkthrough takes about 6–8 minutes.
+Use synthetic or test information only. The app uses Supabase Auth and Postgres; it does not connect to a bank, wallet, OCR service or AI service.
 
 ## Prepare
 
-From the repository root, run `npm ci` and `npm run dev`, then open the local Vite address. To start with an empty workspace, open the browser developer console, run `localStorage.clear()`, and reload. Keep the demo disclosure visible throughout the walkthrough.
+Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md), apply the database migration, set `.env.local`, and run `npm ci` followed by `npm run dev`. Configure Supabase email confirmation according to the intended test flow. New accounts have no sample transactions or receivables.
 
 ## Walkthrough
 
-1. On Dashboard, enter an opening balance of **470,000 MMK**. The reference defaults to the current time in Asia/Rangoon. Explain that this is a synthetic starting point, not a verified bank balance.
-2. Open Transactions and add a pending income record for **400,000 MMK**, description “Demo invoice”, dated today and due in two days. If the opening-day timing question appears, choose “after the opening balance time.” Add a pending expense for **650,000 MMK**, description “Demo bill”, dated today and due in three days, with the same timing choice. In Forecast & insights, show the expected-date low point and the delayed-inflow shortfall. The result is calculated from the entries; it is not a fixed alert.
-3. In Transactions, type “Taxi delivery” as a description and show the optional transport suggestion. Apply it, then change the category manually to demonstrate that the user controls the final category.
-4. In Upload & review, select a harmless sample JPEG, PNG or WebP file, run “Simulate sample extraction,” and review the fields. Point out the explicit confirmation step and the notice that the image is not stored. The sample values are illustrative; they are not extracted from image pixels.
-5. In Record readiness, show the record checks and mark one or two synthetic document checklist items available. Explain that the app stores only checklist status, not document files, and does not assess creditworthiness or loan approval.
-6. In Ask AI, ask “What are my expenses this month?” and then “Will I get a loan?” Show the record-backed answer and the refusal to predict approval.
+1. Start at **Get Started**, create an account, and confirm the email if confirmation is enabled.
+2. Sign in and confirm the workspace starts without transaction or receivable records.
+3. Add test income and expense records. Check that the dashboard totals, chart, transactions page, and assistant reflect those records.
+4. Add an explicit receivable, then mark it paid and confirm it creates one linked income record.
+5. Open Credit Readiness, select a bank profile, and mark an example self-reported document. The checklist state is stored in the signed-in workspace; it does not upload files or predict approval.
+6. Open Settings and change the time zone. Sign out and back in to confirm the preference persists.
+7. If testing an existing browser account, prepare a matching local workspace and verify the import preview before confirming. The import includes sample records in that account workspace. The old unattributed shared workspace is not imported.
 
-## Reset after the demo
-
-Run `localStorage.clear()` in the browser console and reload to remove the synthetic workspace. Receipt images are held only in the current tab and are discarded when the review flow ends.
+To reset a test run, use a new Supabase Auth user or remove the test user's rows from the Supabase project. There is no in-app demo reset action.
