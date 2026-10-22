@@ -26,6 +26,8 @@ import { emptyAppData } from '../domain/types';
 import { getImportStatus, getLocalImportCandidate, importLocalWorkspace, loadWorkspace, saveWorkspace, skipLocalWorkspaceImport } from '../services/workspaceRepository';
 import { useState } from 'react';
 
+const DEMO_PREVIEW_USER = { id: 'local-demo-preview', name: 'Demo Preview', email: 'demo-preview@local.invalid' };
+
 function routeName(pathname: string, t: TFunction) {
   if (pathname === '/') return t('brand');
   if (pathname === '/auth') return 'Log in';
@@ -45,7 +47,8 @@ export function App() {
   const navigate = useNavigate();
   const previousPath = useRef(location.pathname);
   const [workspaceLoad, setWorkspaceLoad] = useState<{ userId: string | null; ready: boolean; error: string | null }>({ userId: null, ready: false, error: null });
-  const workspaceReady = Boolean(user && workspaceLoad.userId === user.id && workspaceLoad.ready);
+  const isDemoPreview = user?.id === DEMO_PREVIEW_USER.id;
+  const workspaceReady = Boolean(user && (isDemoPreview || (workspaceLoad.userId === user.id && workspaceLoad.ready)));
   const workspaceError = user && workspaceLoad.userId === user.id ? workspaceLoad.error : null;
   const [importCandidate, setImportCandidate] = useState<Awaited<ReturnType<typeof getLocalImportCandidate>>>(null);
   const [importBusy, setImportBusy] = useState(false);
@@ -65,6 +68,10 @@ export function App() {
   useEffect(() => {
     if (!user) {
       useDemoStore.setState({ data: emptyAppData(), storageNotice: null });
+      return;
+    }
+    if (user.id === DEMO_PREVIEW_USER.id) {
+      setWorkspaceLoad({ userId: user.id, ready: true, error: null });
       return;
     }
     let cancelled = false;
@@ -93,7 +100,7 @@ export function App() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || !workspaceReady || importCandidate) return;
+    if (!user || isDemoPreview || !workspaceReady || importCandidate) return;
     let queue = Promise.resolve();
     let active = true;
     const unsubscribe = useDemoStore.subscribe((state, previous) => {
@@ -104,7 +111,7 @@ export function App() {
       });
     });
     return () => { active = false; unsubscribe(); };
-  }, [user, workspaceReady, importCandidate]);
+  }, [user, isDemoPreview, workspaceReady, importCandidate]);
 
   async function confirmImport() {
     if (!user || !importCandidate || importBusy) return;
@@ -134,6 +141,11 @@ export function App() {
 
   async function signOutAndLeave() {
     if (!user) return;
+    if (isDemoPreview) {
+      setAuthUser(null);
+      navigate('/', { replace: true });
+      return;
+    }
     try {
       const current = useDemoStore.getState();
       await saveWorkspace(user.id, { data: current.data, storageNotice: null, timeZone: current.timeZone });
@@ -147,7 +159,13 @@ export function App() {
   if (location.pathname === '/' || location.pathname === '/auth' || location.pathname === '/signup') {
     return <WelcomeExperience onAuthenticated={async (authenticatedUser) => {
       setAuthUser(authenticatedUser);
-    }} />;
+    }} onExploreDemo={import.meta.env.DEV ? async () => {
+      const { createSeedData } = await import('../domain/seedData');
+      useDemoStore.setState({ data: createSeedData(), storageNotice: null, timeZone: 'Asia/Rangoon' });
+      setWorkspaceLoad({ userId: DEMO_PREVIEW_USER.id, ready: true, error: null });
+      setAuthUser(DEMO_PREVIEW_USER);
+      navigate('/dashboard', { replace: true });
+    } : undefined} />;
   }
   if (authLoading) return <main className="min-h-screen grid place-items-center p-8"><p role="status">Connecting to your account…</p></main>;
   if (!user) return <Navigate to="/" replace />;
@@ -201,7 +219,8 @@ export function App() {
               <BrandWordmark className="mobile-brand-name" />
             </Link>
             <div className="topbar-actions">
-              <button className="sign-out-action" type="button" onClick={() => void signOutAndLeave()}><LogOut size={16} aria-hidden="true" /><span>Sign out</span></button>
+              {isDemoPreview ? <span className="demo-preview-label">Demo preview · sample data</span> : null}
+              <button className="sign-out-action" type="button" onClick={() => void signOutAndLeave()}><LogOut size={16} aria-hidden="true" /><span>{isDemoPreview ? 'Exit demo' : 'Sign out'}</span></button>
               <Link className="record-action" to="/add">
                 <Plus size={18} aria-hidden="true" /><span>{t('add.nav')}</span>
               </Link>

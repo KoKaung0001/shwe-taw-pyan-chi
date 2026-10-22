@@ -6,6 +6,8 @@ Use synthetic or test information only. The app uses Supabase Auth and Postgres;
 
 Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md), apply the database migration, set `.env.local`, and run `npm ci` followed by `npm run dev`. Configure Supabase email confirmation according to the intended test flow. New accounts have no sample transactions or receivables.
 
+For a local UI walkthrough when Supabase is unreachable, choose **Explore with demo data** on the landing or sign-in screen. This development-only preview opens the app with synthetic transactions and does not use Supabase. Changes last only for that preview session and are discarded when you exit or reload; deployed builds do not show this option.
+
 ## Walkthrough
 
 1. Start at **Get Started**, create an account, and confirm the email if confirmation is enabled.

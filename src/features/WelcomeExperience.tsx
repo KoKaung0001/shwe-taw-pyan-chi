@@ -23,7 +23,10 @@ const objects = [
   { kind: 'note', title: 'Groceries', detail: '24,000 MMK', icon: WalletCards, left: 92, top: 75, rotation: 8 },
 ] as const;
 
-export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user: AuthenticatedUser) => Promise<void> | void }) {
+export function WelcomeExperience({ onAuthenticated, onExploreDemo }: {
+  onAuthenticated: (user: AuthenticatedUser) => Promise<void> | void;
+  onExploreDemo?: () => void;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -105,6 +108,7 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
   const sceneClass = `welcome-experience${isAuthRoute && phase === 'ready' ? ' is-auth-route' : ''}${phase === 'collecting' ? ' is-collecting' : ''}${phase === 'organizing' ? ' is-organizing' : ''}${phase === 'ready' ? ' is-auth-ready' : ''}`;
 
   return <main className={sceneClass}>
+    <div className="welcome-hero-shell">
     <header className="welcome-header">
       <Link to="/" className="welcome-brand" aria-label={`${brand} home`} onClick={() => setPhase('landing')}>
         <span className="welcome-brand-mark" aria-hidden="true" />
@@ -133,6 +137,7 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
       <button className="welcome-primary-button" type="button" onClick={begin} disabled={phase !== 'landing'}>
         Get Started <ArrowRight size={18} aria-hidden="true" />
       </button>
+      {import.meta.env.DEV && onExploreDemo ? <button className="welcome-demo-preview" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
       <span className="welcome-reassurance"><LockKeyhole size={14} aria-hidden="true" /> Your financial records stay yours</span>
     </section>
 
@@ -147,9 +152,45 @@ export function WelcomeExperience({ onAuthenticated }: { onAuthenticated: (user:
         <button className="welcome-primary-button welcome-auth-submit" type="submit" disabled={submitting}>{submitting ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}<ArrowRight size={17} aria-hidden="true" /></button>
       </form>
       <p className="welcome-auth-switch">{isSignup ? 'Already have an account?' : <>New to <BrandWordmark inline />?</>} <Link to={isSignup ? '/auth' : '/signup'}>{isSignup ? 'Log in' : 'Sign up'}</Link></p>
+      {import.meta.env.DEV && onExploreDemo ? <button className="welcome-demo-preview welcome-demo-preview-auth" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
       {message ? <p className="welcome-auth-message" role="status">{message}</p> : null}
     </section>
 
     <footer className="welcome-footer"><span>Small steps. A clearer picture.</span><span>Built for everyday money</span></footer>
+    </div>
+
+    {!isAuthRoute ? <section className="welcome-bank-context" aria-labelledby="bank-context-heading">
+      <header className="welcome-context-intro">
+        <span className="welcome-context-kicker">Shwe Taw Pyan Chi for financial institutions</span>
+        <h2 id="bank-context-heading">Empowering Banks Through Smarter Financial Insights</h2>
+        <p>We help financial institutions better understand freelancers and small businesses through organized financial records, transparent readiness assessments, and AI-powered insights.</p>
+      </header>
+      <div className="welcome-context-points">
+        <article className="welcome-context-point">
+          <span className="welcome-context-number">01</span>
+          <div>
+            <h3>Why Banks Can Trust Us</h3>
+            <p className="welcome-context-hook">Transparent Data. Explainable Insights. Responsible Decisions.</p>
+            <p className="welcome-context-detail">We organize income, expenses, cash flow, and financial documents into clear, easy-to-review reports. Our approach emphasizes data transparency, user consent, and explainable assessments—helping banks make more informed lending decisions while keeping final approval in their hands.</p>
+          </div>
+        </article>
+        <article className="welcome-context-point">
+          <span className="welcome-context-number">02</span>
+          <div>
+            <h3>Why Partner With Us?</h3>
+            <p className="welcome-context-hook">Reach Underserved Customers. Unlock New Opportunities.</p>
+            <p className="welcome-context-detail">Many freelancers and small businesses lack the organized financial records needed to demonstrate their financial health. Shwe Taw Pyan Chi helps bridge this gap, enabling banks to better understand these customers and explore new opportunities in the underserved SME and independent-worker markets.</p>
+          </div>
+        </article>
+        <article className="welcome-context-point">
+          <span className="welcome-context-number">03</span>
+          <div>
+            <h3>How We Help Banks Grow</h3>
+            <p className="welcome-context-hook">Reduce Manual Work. Discover New Revenue Opportunities.</p>
+            <p className="welcome-context-detail">By organizing financial information and highlighting relevant cash-flow insights, our platform has the potential to reduce document-review effort, improve application preparation, and help banks identify qualified potential borrowers. More efficient processes and broader customer reach can create opportunities for sustainable business growth.</p>
+          </div>
+        </article>
+      </div>
+    </section> : null}
   </main>;
 }
