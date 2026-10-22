@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { emptyAppData, type Transaction } from './types';
 import {
-  buildCashFlowForecast,
+  buildFinancialChartSeries,
   getReportingRange,
+  summarizeDailyMovement,
   summarizeMonthlyMovement,
   summarizeOutstanding,
   summarizePeriod,
@@ -65,6 +66,29 @@ describe('reporting selectors', () => {
     });
   });
 
+  it('returns one daily chart value for every date and excludes pending transactions', () => {
+    const series = summarizeDailyMovement(
+      [
+        record({ id: 'monday', date: '2026-10-19', amount: 12_000 }),
+        record({ id: 'monday-expense', date: '2026-10-19', type: 'expense', amount: 4_000 }),
+        record({ id: 'wednesday', date: '2026-10-21', amount: 7_000 }),
+        record({ id: 'pending', date: '2026-10-20', cashStatus: 'pending', dueDate: '2026-10-20', amount: 90_000 }),
+        record({ id: 'outside', date: '2026-10-26' }),
+      ],
+      { startDate: '2026-10-19', endDate: '2026-10-25' },
+    );
+
+    expect(series).toHaveLength(7);
+    expect(series.map(({ date }) => date)).toEqual([
+      '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22',
+      '2026-10-23', '2026-10-24', '2026-10-25',
+    ]);
+    expect(series[0]).toMatchObject({ income: 12_000, expenses: 4_000 });
+    expect(series[1]).toMatchObject({ income: 0, expenses: 0 });
+    expect(series[2]).toMatchObject({ income: 7_000, expenses: 0 });
+    expect(series[6]).toMatchObject({ income: 0, expenses: 0 });
+  });
+
   it('creates a six-month chart series from settled records', () => {
     const series = summarizeMonthlyMovement(
       [
@@ -88,6 +112,7 @@ describe('reporting selectors', () => {
     const result = summarizeOutstanding(
       {
         ...emptyAppData(),
+        receivables: [{ id: 'invoice', amount: 400_000, currency: 'MMK', date: '2026-10-01', counterparty: 'Client', status: 'unpaid', categoryId: 'client-income', createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z' }],
         transactions: [
           record({
             id: 'invoice',
@@ -109,134 +134,45 @@ describe('reporting selectors', () => {
     );
     expect(result.receivableTotal).toBe(400_000);
     expect(result.payableTotal).toBe(60_000);
-    expect(result.receivables[0].overdue).toBe(true);
+    expect(result.receivables).toHaveLength(0);
     expect(result.payables[0].overdue).toBe(false);
   });
 });
 
-describe('14-day cash-flow forecast', () => {
-  it('reproduces the 180,000 late-inflow shortfall and shifts only income by seven days', () => {
-    const today = '2026-10-21';
-    const input = {
-      ...emptyAppData(),
-      openingBalance: {
-        amount: 470_000,
-        referenceAt: '2026-10-20T23:59:00+06:30',
-        timeZone: 'Asia/Rangoon' as const,
-      },
-      transactions: [
-        record({
-          id: 'invoice',
-          amount: 400_000,
-          date: today,
-          cashStatus: 'pending',
-          dueDate: '2026-10-23',
-        }),
-        record({
-          id: 'bill',
-          type: 'expense',
-          amount: 650_000,
-          date: today,
-          cashStatus: 'pending',
-          dueDate: '2026-10-24',
-        }),
-      ],
-    };
-    const forecast = buildCashFlowForecast(input, today);
-    expect(forecast.startingBalance).toBe(470_000);
-    expect(forecast.base.minimumBalance).toBe(220_000);
-    expect(forecast.lateInflows.minimumBalance).toBe(-180_000);
-    expect(forecast.lateInflows.shortfall).toBe(180_000);
-    expect(
-      forecast.base.days.find((day) => day.date === '2026-10-23')?.income,
-    ).toBe(400_000);
-    expect(
-      forecast.lateInflows.days.find((day) => day.date === '2026-10-30')
-        ?.income,
-    ).toBe(400_000);
+describe('movement chart series', () => {
+  it('plots daily settled income and expenses and cumulative net change across every date', () => {
+    const series = buildFinancialChartSeries([
+      record({ id: 'monday-income', date: '2026-10-19', amount: 30_000 }),
+      record({ id: 'monday-expense', date: '2026-10-19', type: 'expense', amount: 4_000 }),
+      record({ id: 'wednesday-expense', date: '2026-10-21', type: 'expense', amount: 40_000 }),
+      record({ id: 'thursday-income', date: '2026-10-22', amount: 20_000 }),
+      record({ id: 'pending', date: '2026-10-21', type: 'expense', amount: 900_000, cashStatus: 'pending', dueDate: '2026-10-21' }),
+    ], { startDate: '2026-10-19', endDate: '2026-10-25' });
+
+    expect(series.days).toHaveLength(7);
+    expect(series.days.map(({ date }) => date)).toEqual([
+      '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22',
+      '2026-10-23', '2026-10-24', '2026-10-25',
+    ]);
+    expect(series.days[0]).toMatchObject({ income: 30_000, expenses: 4_000, dailyNetChange: 26_000, cumulativeNetChange: 26_000 });
+    expect(series.days[1]).toMatchObject({ income: 0, expenses: 0, dailyNetChange: 0, cumulativeNetChange: 26_000 });
+    expect(series.days[2]).toMatchObject({ income: 0, expenses: 40_000, dailyNetChange: -40_000, cumulativeNetChange: -14_000 });
+    expect(series).toMatchObject({ income: 50_000, expenses: 44_000, netChange: 6_000 });
   });
 
-  it('moves overdue items to today and does not forecast a processed payment twice', () => {
-    const today = '2026-10-21';
-    const due = record({
-      id: 'linked-payment',
-      type: 'expense',
-      amount: 10_000,
-      date: '2026-10-20',
-      dueDate: '2026-10-20',
-      source: 'recurring',
-      cashStatus: 'settled',
-      confirmationStatus: 'unconfirmed',
-      paymentOccurrenceId: 'rent:2026-10-20',
-    });
-    const forecast = buildCashFlowForecast(
-      {
-        ...emptyAppData(),
-        openingBalance: {
-          amount: 100_000,
-          referenceAt: '2026-10-19T23:59:00+06:30',
-          timeZone: 'Asia/Rangoon',
-        },
-        transactions: [due],
-        scheduleRules: [
-          {
-            id: 'rent',
-            type: 'expense',
-            amount: 10_000,
-            categoryId: 'rent',
-            counterpartyId: null,
-            schedule: { kind: 'one_time', dueDate: '2026-10-20' },
-            active: true,
-            createdAt: '2026-10-19T00:00:00Z',
-            updatedAt: '2026-10-19T00:00:00Z',
-          },
-        ],
-        paymentOccurrences: [
-          {
-            id: 'rent:2026-10-20',
-            ruleId: 'rent',
-            originalDueDate: '2026-10-20',
-            status: 'assumed_unconfirmed',
-            paymentTransactionId: due.id,
-            paymentDate: due.date,
-            paymentAmount: due.amount,
-            history: [{ action: 'assumed', at: '2026-10-20T00:00:00Z' }],
-          },
-        ],
-      },
-      today,
-    );
-    expect(forecast.startingBalance).toBe(90_000);
-    expect(forecast.base.days[0].expenses).toBe(0);
-    expect(forecast.base.days[0].closingBalance).toBe(90_000);
-  });
-
-  it('places overdue unpaid obligations on the first forecast day', () => {
-    const forecast = buildCashFlowForecast(
-      {
-        ...emptyAppData(),
-        openingBalance: {
-          amount: 100_000,
-          referenceAt: '2026-10-19T23:59:00+06:30',
-          timeZone: 'Asia/Rangoon',
-        },
-        transactions: [
-          record({
-            id: 'overdue-bill',
-            type: 'expense',
-            amount: 25_000,
-            date: '2026-10-18',
-            dueDate: '2026-10-19',
-            cashStatus: 'pending',
-          }),
-        ],
-      },
-      '2026-10-21',
-    );
-    expect(forecast.base.days[0]).toMatchObject({
-      date: '2026-10-21',
-      expenses: 25_000,
-      closingBalance: 75_000,
-    });
+  it('updates the plotted dates and totals when the selected period changes', () => {
+    const transactions = [
+      record({ id: 'in-range', date: '2026-10-20', amount: 30_000 }),
+      record({ id: 'outside-range', date: '2026-10-27', amount: 12_000 }),
+    ];
+    const firstRange = buildFinancialChartSeries(transactions, getReportingRange('this_week', '2026-10-21'));
+    const nextWeek = buildFinancialChartSeries(transactions, { startDate: '2026-10-26', endDate: '2026-11-01' });
+    expect(firstRange.days).toHaveLength(7);
+    expect(firstRange.income).toBe(30_000);
+    expect(nextWeek.days.map((day) => day.date)).toEqual([
+      '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01',
+    ]);
+    expect(nextWeek.income).toBe(12_000);
+    expect(nextWeek.days[1].cumulativeNetChange).toBe(12_000);
   });
 });

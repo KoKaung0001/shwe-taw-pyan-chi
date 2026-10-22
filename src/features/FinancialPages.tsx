@@ -1,38 +1,19 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  ChevronRight,
-  CalendarClock,
-  CircleAlert,
   Plus,
-  ReceiptText,
-  TrendingDown,
-  TrendingUp,
-  WalletCards,
 } from 'lucide-react';
 import { CategorySuggestion } from '../components/CategorySuggestion';
-import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
-import {
-  getReportingRange,
-  summarizeMonthlyMovement,
-  summarizeOutstanding,
-  summarizePeriod,
-  buildCashFlowForecast,
-  type ReportingPeriod,
-} from '../domain/reporting';
+import { DatePickerField } from '../components/DatePickerField';
 import type { Transaction } from '../domain/types';
 import { clockForTimeZone, systemClock } from '../services/clock';
-import { dateInTimeZone, dateTimeInputInTimeZone, dateTimeInputToInstant } from '../services/timeZone';
 import { useDemoStore } from '../store/demoStore';
 
 const money = (amount: number | null) =>
@@ -44,528 +25,6 @@ const money = (amount: number | null) =>
 const uid = () =>
   globalThis.crypto?.randomUUID?.() ??
   `txn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-function businessNowInput(timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(systemClock.now());
-  const val = (type: string) =>
-    parts.find((part) => part.type === type)?.value ?? '00';
-  return `${val('year')}-${val('month')}-${val('day')}T${val('hour')}:${val('minute')}`;
-}
-function businessDate(instant: string, timeZone: string) {
-  return dateInTimeZone(instant, timeZone);
-}
-
-export function DashboardPage() {
-  const { t } = useTranslation();
-  const location = useLocation();
-  const data = useDemoStore((state) => state.data);
-  const timeZone = useDemoStore((state) => state.timeZone);
-  const [period, setPeriod] = useState<ReportingPeriod>('this_month');
-  const today = clockForTimeZone(timeZone).today();
-  const range = getReportingRange(period, today);
-  const { startDate, endDate } = range;
-  const result = useMemo(
-    () =>
-      calculateRecordedAvailableBalance(data.openingBalance, data.transactions),
-    [data],
-  );
-  const summary = useMemo(
-    () => summarizePeriod(data.transactions, { startDate, endDate }),
-    [data.transactions, startDate, endDate],
-  );
-  const monthlyMovement = useMemo(
-    () => summarizeMonthlyMovement(data.transactions, today),
-    [data.transactions, today],
-  );
-  const outstanding = useMemo(
-    () => summarizeOutstanding(data, today),
-    [data, today],
-  );
-  const forecast = useMemo(
-    () => buildCashFlowForecast(data, today),
-    [data, today],
-  );
-  const unconfirmedCount = data.paymentOccurrences.filter(
-    (occurrence) => occurrence.status === 'assumed_unconfirmed',
-  ).length;
-  const upcomingItems = [
-    ...data.paymentOccurrences
-      .filter((occurrence) => occurrence.status === 'scheduled' && occurrence.originalDueDate >= today)
-      .flatMap((occurrence) => {
-        const rule = data.scheduleRules.find((item) => item.id === occurrence.ruleId);
-        return rule ? [{ id: occurrence.id, date: occurrence.originalDueDate, amount: rule.amount, description: rule.description || t(`category.${rule.categoryId ?? 'uncategorized'}`) }] : [];
-      }),
-    ...data.transactions
-      .filter((transaction) => transaction.cashStatus === 'pending' && transaction.dueDate && transaction.dueDate >= today)
-      .map((transaction) => ({ id: transaction.id, date: transaction.dueDate ?? transaction.date, amount: transaction.amount, description: transaction.description || t(`category.${transaction.categoryId ?? 'uncategorized'}`) })),
-  ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
-  useEffect(() => {
-    if (location.hash === '#opening-balance') {
-      window.requestAnimationFrame(() => document.getElementById('opening-balance')?.scrollIntoView({ block: 'start' }));
-    }
-  }, [location.hash]);
-  return (
-    <div className="dashboard-page">
-      <header className="page-heading">
-        <h1 tabIndex={-1}>{t('dashboard.nav')}</h1>
-      </header>
-
-      <section
-        className="balance-card surface-card"
-        id="opening-balance"
-        aria-label={t('balance.available')}
-      >
-        <div className="balance-card-top">
-          <div className="balance-card-label">
-            <span className="icon-circle icon-circle-blue">
-              <WalletCards size={20} />
-            </span>
-            <div>
-              <p className="card-kicker">{t('balance.available')}</p>
-            </div>
-          </div>
-        </div>
-        {!data.openingBalance ? (
-          <div className="balance-empty-state">
-            <div className="opening-form-wrap">
-              <h2>{t('opening.title')}</h2>
-              <OpeningBalanceForm key={timeZone} />
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="balance-amount">
-              {money(result.amount)} <span>MMK</span>
-            </p>
-            <p className="balance-asof">
-              {t('balance.asOf', {
-                date: businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone),
-              })}
-            </p>
-            <Link className="balance-reference-link" to="/settings">
-              {t('settings.nav')} <ArrowRight size={15} />
-            </Link>
-          </>
-        )}
-      </section>
-
-      {result.unclassifiedOpeningDayIds.length ? (
-        <div className="attention-card" role="status">
-          <CircleAlert size={20} aria-hidden="true" />
-          <p>
-            {t('balance.reviewOpeningDay', {
-              count: result.unclassifiedOpeningDayIds.length,
-            })}
-          </p>
-          <Link to="/transactions">
-            {t('transactions.nav')}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      ) : null}
-      {unconfirmedCount > 0 ? (
-        <div className="attention-card attention-card-amber" role="status">
-          <CircleAlert size={20} aria-hidden="true" />
-          <p>
-            {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
-          </p>
-          <Link to="/payments/upcoming">
-            {t('payments.nav')}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      ) : null}
-
-      <section className="home-upcoming surface-card">
-        <div className="section-heading-row">
-          <div>
-            <h2>{t('dashboard.nextPayments')}</h2>
-          </div>
-          <Link className="text-link" to="/payments/upcoming">
-            {t('dashboard.allPayments')} <ArrowRight size={15} />
-          </Link>
-        </div>
-        {upcomingItems.length ? (
-          <ul className="upcoming-list">
-            {upcomingItems.map((item) => {
-              return (
-                <li key={item.id}>
-                  <span className="upcoming-date">{item.date}</span>
-                  <span className="upcoming-description">{item.description}</span>
-                  <strong>{money(item.amount)} <small>MMK</small></strong>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="home-upcoming-empty">{t('dashboard.noUpcoming')}</p>
-        )}
-      </section>
-
-      <section className="summary-grid" aria-label={t('dashboard.outstanding')}>
-        <Link to="/payments/owed" className="summary-card surface-card">
-          <div className="summary-card-icon summary-icon-positive">
-            <ArrowDownRight size={19} />
-          </div>
-          <div className="summary-card-heading">
-            <span>{t('owed.receivableTotal')}</span>
-            <ArrowRight size={16} />
-          </div>
-          <p className="summary-amount">
-            {money(outstanding.receivableTotal)} <small>MMK</small>
-          </p>
-        </Link>
-        <Link to="/payments/owed" className="summary-card surface-card">
-          <div className="summary-card-icon summary-icon-negative">
-            <ArrowUpRight size={19} />
-          </div>
-          <div className="summary-card-heading">
-            <span>{t('owed.payableTotal')}</span>
-            <ArrowRight size={16} />
-          </div>
-          <p className="summary-amount">
-            {money(outstanding.payableTotal)} <small>MMK</small>
-          </p>
-        </Link>
-        <Link
-          to="/insights"
-          className={`summary-card surface-card${forecast.base.shortfall || forecast.lateInflows.shortfall ? ' summary-card-alert' : ''}`}
-        >
-          <div className="summary-card-icon summary-icon-forecast">
-            <CalendarClock size={19} />
-          </div>
-          <div className="summary-card-heading">
-            <span>{t('forecast.dailyTitle')}</span>
-            <ArrowRight size={16} />
-          </div>
-          <p className="summary-amount">
-            {money(forecast.lateInflows.minimumBalance)} <small>MMK</small>
-          </p>
-          <span className="summary-note">
-            {forecast.lateInflows.shortfall
-              ? t('forecast.shortfall', {
-                  amount: money(forecast.lateInflows.shortfall),
-                })
-              : t('forecast.lowPoint')}
-          </span>
-        </Link>
-      </section>
-
-      {(forecast.base.shortfall > 0 || forecast.lateInflows.shortfall > 0) && (
-        <Link className="forecast-warning" to="/insights">
-          <span className="warning-icon">
-            <CircleAlert size={20} />
-          </span>
-          <span className="warning-copy">
-            <strong>
-              {t('forecast.shortfall', {
-                amount: money(
-                  Math.max(
-                    forecast.base.shortfall,
-                    forecast.lateInflows.shortfall,
-                  ),
-                ),
-              })}
-            </strong>
-            <small>{t('forecast.disclaimer')}</small>
-          </span>
-          <ArrowRight className="warning-arrow" size={18} />
-        </Link>
-      )}
-
-      <section className="recent-card surface-card">
-        <div className="section-heading-row">
-          <div>
-            <h2>{t('dashboard.recent')}</h2>
-          </div>
-          <Link className="text-link" to="/transactions">
-            {t('transactions.open')}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-        {data.transactions.length ? (
-          <ul className="transaction-list">
-            {[...data.transactions]
-              .sort((a, b) => b.date.localeCompare(a.date))
-              .slice(0, 5)
-              .map((item) => (
-                <li key={item.id}>
-                  <span
-                    className={`transaction-type-icon ${item.type === 'income' ? 'transaction-income' : 'transaction-expense'}`}
-                  >
-                    {item.type === 'income' ? (
-                      <TrendingUp size={18} />
-                    ) : (
-                      <TrendingDown size={18} />
-                    )}
-                  </span>
-                  <div className="transaction-description">
-                    <p>
-                      {item.description ||
-                        t(`category.${item.categoryId ?? 'uncategorized'}`)}
-                    </p>
-                    <span>
-                      {item.date} · {t(`transaction.${item.type}`)} ·{' '}
-                      {t(`transaction.${item.cashStatus}`)}
-                    </span>
-                  </div>
-                  <strong
-                    className={
-                      item.type === 'income' ? 'transaction-amount-income' : ''
-                    }
-                  >
-                    {item.type === 'expense' ? '−' : '+'}
-                    {money(item.amount)} <small>MMK</small>
-                  </strong>
-                </li>
-              ))}
-          </ul>
-        ) : (
-          <div className="empty-transactions">
-            <span>
-              <ReceiptText size={22} />
-            </span>
-            <p>{t('dashboard.empty')}</p>
-            <Link
-              className="pill-button pill-button-primary"
-              to="/transactions#transaction-form"
-            >
-              <Plus size={17} />
-              {t('transactions.add')}
-            </Link>
-          </div>
-        )}
-      </section>
-
-      <details className="movement-details surface-card">
-        <summary>
-          <span>
-            <span className="summary-card-icon summary-icon-forecast">
-              <TrendingUp size={19} />
-            </span>
-            <span>
-              <strong>{t('dashboard.periodSummary')}</strong>
-            </span>
-          </span>
-          <ChevronRight size={19} />
-        </summary>
-        <div className="movement-content">
-          <div className="movement-toolbar">
-            <p>
-              {range.startDate} – {range.endDate}
-            </p>
-            <label>
-              {t('dashboard.reportingPeriod')}
-              <select
-                className="field-control"
-                value={period}
-                onChange={(event) =>
-                  setPeriod(event.target.value as ReportingPeriod)
-                }
-              >
-                <option value="this_month">{t('dashboard.thisMonth')}</option>
-                <option value="last_month">{t('dashboard.lastMonth')}</option>
-                <option value="last_30_days">
-                  {t('dashboard.last30Days')}
-                </option>
-              </select>
-            </label>
-          </div>
-          <div className="movement-metrics">
-            <MetricCard
-              label={t('dashboard.periodIncome')}
-              value={summary.income}
-            />
-            <MetricCard
-              label={t('dashboard.periodExpenses')}
-              value={summary.expenses}
-            />
-            <MetricCard label={t('balance.netMovement')} value={summary.net} />
-          </div>
-          <p className="movement-note">
-            {t('dashboard.settledOnly', { count: summary.transactionCount })}
-          </p>
-          <MovementChart values={monthlyMovement} />
-        </div>
-      </details>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <article className="rounded-2xl bg-canvas p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">
-        {money(value)} <span className="text-sm font-medium">MMK</span>
-      </p>
-    </article>
-  );
-}
-
-function MovementChart({
-  values,
-}: {
-  values: ReturnType<typeof summarizeMonthlyMovement>;
-}) {
-  const { t } = useTranslation();
-  const max = Math.max(
-    1,
-    ...values.flatMap((item) => [item.income, item.expenses]),
-  );
-  const monthLabel = (month: string) =>
-    new Intl.DateTimeFormat('en', { month: 'short' }).format(
-      new Date(`${month}-01T12:00:00Z`),
-    );
-  return (
-    <div className="mt-4 overflow-x-auto">
-      <svg
-        className="h-48 min-w-[34rem] w-full"
-        viewBox="0 0 600 190"
-        role="img"
-        aria-label={t('dashboard.monthlyChartAccessible')}
-      >
-        <line x1="20" y1="150" x2="580" y2="150" stroke="#cdddcf" />
-        {values.map((item, index) => {
-          const center = 65 + index * 94;
-          const incomeHeight = (item.income / max) * 118;
-          const expenseHeight = (item.expenses / max) * 118;
-          return (
-            <g key={item.month}>
-              <rect
-                x={center - 20}
-                y={150 - incomeHeight}
-                width="22"
-                height={incomeHeight}
-                rx="5"
-                fill="#18745b"
-              />
-              <rect
-                x={center + 5}
-                y={150 - expenseHeight}
-                width="22"
-                height={expenseHeight}
-                rx="5"
-                fill="#c77b35"
-              />
-              <text
-                x={center + 3}
-                y="174"
-                textAnchor="middle"
-                fill="#52635a"
-                fontSize="12"
-              >
-                {monthLabel(item.month)}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      <div className="flex gap-5 text-sm text-muted" aria-hidden="true">
-        <span>
-          <i className="mr-2 inline-block size-3 rounded-sm bg-accent" />
-          {t('dashboard.periodIncome')}
-        </span>
-        <span>
-          <i className="mr-2 inline-block size-3 rounded-sm bg-[#c77b35]" />
-          {t('dashboard.periodExpenses')}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-export function OpeningBalanceForm() {
-  const { t } = useTranslation();
-  const existing = useDemoStore((state) => state.data.openingBalance);
-  const save = useDemoStore((state) => state.setOpeningBalance);
-  const timeZone = useDemoStore((state) => state.timeZone);
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [amount, setAmount] = useState(String(existing?.amount ?? ''));
-  const [referenceAt, setReferenceAt] = useState(
-    existing
-      ? dateTimeInputInTimeZone(existing.referenceAt, timeZone)
-      : businessNowInput(timeZone),
-  );
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    setError('');
-    setSaved(false);
-    if (!/^\d+$/.test(amount) || Number(amount) > 1_000_000_000_000) {
-      setError(t('form.amountError'));
-      return;
-    }
-    let referenceInstant: string;
-    try {
-      referenceInstant = dateTimeInputToInstant(referenceAt, timeZone);
-    } catch {
-      setError(t('opening.invalidLocalTime'));
-      return;
-    }
-    if (!referenceAt || referenceInstant > systemClock.now().toISOString()) {
-      setError(t('opening.futureError'));
-      return;
-    }
-    save({
-      amount: Number(amount),
-      referenceAt: referenceInstant,
-      timeZone,
-    });
-    setSaved(true);
-  }
-  return (
-    <form onSubmit={submit} className="opening-balance-form grid gap-4 sm:grid-cols-2">
-      <label className="opening-field grid gap-2 text-sm font-medium">
-        {t('opening.amount')}
-        <input
-          className="field-control min-h-12 rounded-xl border border-[#bccbc0] px-4"
-          type="number"
-          min="0"
-          step="1"
-          placeholder={t('opening.amountPlaceholder')}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-      </label>
-      <label className="opening-field grid gap-2 text-sm font-medium">
-        {t('opening.referenceAt')}
-        <input
-          className="field-control min-h-12 rounded-xl border border-[#bccbc0] px-4"
-          type="datetime-local"
-          aria-label={t('opening.referenceAt')}
-          value={referenceAt}
-          onChange={(e) => setReferenceAt(e.target.value)}
-          required
-        />
-      </label>
-      {error ? (
-        <p role="alert" className="text-sm text-red-800 sm:col-span-2">
-          {error}
-        </p>
-      ) : null}
-      {saved ? (
-        <p role="status" className="text-sm text-accent sm:col-span-2">
-          {t('opening.saved')}
-        </p>
-      ) : null}
-      <div className="sm:col-span-2">
-        <button className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white">
-          {existing ? t('opening.update') : t('opening.save')}
-        </button>
-      </div>
-    </form>
-  );
-}
-
 export function SettingsPage() {
   const { t } = useTranslation();
   const timeZone = useDemoStore((state) => state.timeZone);
@@ -578,33 +37,43 @@ export function SettingsPage() {
     ...(intlWithZones.supportedValuesOf?.('timeZone') ?? []),
   ])];
   return (
-    <>
+    <div className="page-stack settings-page-stack">
       <header className="page-heading">
         <h1 tabIndex={-1}>{t('settings.title')}</h1>
       </header>
       <section className="surface-card settings-panel">
         <label className="grid max-w-xl gap-2 text-sm font-medium">
           {t('settings.timeZone')}
-          <select
-            className="field-control"
-            value={timeZone}
-            onChange={(event) => {
-              setTimeZone(event.target.value);
-              useDemoStore.getState().processDueSchedules();
-            }}
-          >
-            {availableTimeZones.map((zone) => (
-              <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>
-            ))}
+          <select className="app-select" value={timeZone} onChange={(event) => {
+            setTimeZone(event.target.value);
+            useDemoStore.getState().processDueSchedules();
+          }}>
+            {availableTimeZones.map((zone) => <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>)}
           </select>
         </label>
       </section>
-      <section className="surface-card settings-panel">
-        <h2 className="mb-5 text-xl font-semibold">{t('opening.title')}</h2>
-        <OpeningBalanceForm key={timeZone} />
-      </section>
-    </>
+      <ResetDemoPanel />
+    </div>
   );
+}
+function ResetDemoPanel() {
+  const { t } = useTranslation();
+  const reset = useDemoStore((state) => state.resetDemoData);
+  const [confirming, setConfirming] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (confirming) cancelButtonRef.current?.focus(); }, [confirming]);
+  return <section className="surface-card settings-panel reset-panel">
+    <h2 className="text-xl font-semibold">{t('settings.resetTitle', { defaultValue: 'Reset demo data' })}</h2>
+    <p className="my-3 text-muted">{t('settings.resetHelp', { defaultValue: 'Restore the prototype’s initial synthetic records. This only changes data saved in this browser.' })}</p>
+    <button className="danger-button" type="button" onClick={() => { setResetDone(false); setConfirming(true); }}>{t('settings.resetAction', { defaultValue: 'Reset demo data' })}</button>
+    {resetDone ? <p className="success-message mt-3" role="status">{t('settings.resetDone', { defaultValue: 'Demo data has been restored.' })}</p> : null}
+    {confirming ? <div className="dialog-backdrop"><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title" aria-describedby="reset-dialog-description">
+      <h3 id="reset-dialog-title">{t('settings.resetConfirmTitle', { defaultValue: 'Reset demo data?' })}</h3>
+      <p id="reset-dialog-description">{t('settings.resetConfirmBody', { defaultValue: 'Your saved changes in this browser will be replaced with the initial synthetic dataset.' })}</p>
+      <div className="dialog-actions"><button ref={cancelButtonRef} className="secondary-action" type="button" onClick={() => setConfirming(false)}>{t('form.cancel')}</button><button className="danger-button" type="button" onClick={() => { reset(); setConfirming(false); setResetDone(true); }}>{t('settings.resetAction', { defaultValue: 'Reset demo data' })}</button></div>
+    </section></div> : null}
+  </section>;
 }
 
 export function SchedulesPage() {
@@ -715,7 +184,7 @@ export function SchedulesPage() {
           <label className="grid gap-2 text-sm font-medium">
             {t('schedules.repeat')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={repeat}
               onChange={(event) =>
                 setRepeat(event.target.value as 'one_time' | 'monthly')
@@ -728,7 +197,7 @@ export function SchedulesPage() {
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.type')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={type}
               onChange={(event) => {
                 setType(event.target.value as 'income' | 'expense');
@@ -751,18 +220,15 @@ export function SchedulesPage() {
               required
             />
           </label>
-          <label className="grid gap-2 text-sm font-medium">
-            {repeat === 'one_time'
-              ? t('transaction.dueDate')
-              : t('schedules.startDate')}
-            <input
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-              type="date"
-              value={dueDate}
-              onChange={(event) => setDueDate(event.target.value)}
-              required
-            />
-          </label>
+          <DatePickerField
+            id="schedule-due-date"
+            label={repeat === 'one_time' ? t('transaction.dueDate') : t('schedules.startDate')}
+            fieldClassName="grid gap-2 text-sm font-medium"
+            inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+            value={dueDate}
+            onChange={setDueDate}
+            required
+          />
           {repeat === 'monthly' ? (
             <>
               <label className="grid gap-2 text-sm font-medium">
@@ -778,22 +244,21 @@ export function SchedulesPage() {
                   required
                 />
               </label>
-              <label className="grid gap-2 text-sm font-medium">
-                {t('schedules.endDate')}
-                <input
-                  className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-                  type="date"
-                  min={dueDate}
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                />
-              </label>
+              <DatePickerField
+                id="schedule-end-date"
+                label={t('schedules.endDate')}
+                fieldClassName="grid gap-2 text-sm font-medium"
+                inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+                min={dueDate}
+                value={endDate}
+                onChange={setEndDate}
+              />
             </>
           ) : null}
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.category')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={categoryId}
               onChange={(event) => setCategoryId(event.target.value)}
             >
@@ -936,16 +401,20 @@ export function TransactionsPage() {
   const timeZone = useDemoStore((state) => state.timeZone);
   const today = clockForTimeZone(timeZone).today();
   const save = useDemoStore((state) => state.saveTransaction);
+  const settleReceivable = useDemoStore((state) => state.settleReceivable);
   const remove = useDemoStore((state) => state.deleteTransaction);
   const restore = useDemoStore((state) => state.restoreTransaction);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [error, setError] = useState('');
   const [undo, setUndo] = useState<Transaction | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const [formOpen, setFormOpen] = useState(() => window.location.hash === '#transaction-form');
+  const [formOpen, setFormOpen] = useState(() => window.location.hash.endsWith('#transaction-form'));
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(today);
@@ -955,31 +424,27 @@ export function TransactionsPage() {
   const [cashStatus, setCashStatus] = useState<'settled' | 'pending'>(
     'settled',
   );
-  const [openingDayDisposition, setOpeningDayDisposition] = useState('');
   const [confirmationStatus, setConfirmationStatus] = useState<
     'not_applicable' | 'unconfirmed' | 'confirmed'
   >('not_applicable');
-  const openingDay = data.openingBalance
-    ? businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone)
-    : '';
-  const showOpeningChoice = Boolean(
-    data.openingBalance && date === openingDay && !editing?.occurredAt,
-  );
   const categories = data.categories.filter(
     (category) => category.type === type || category.type === 'both',
   );
   useEffect(() => {
     if (location.hash === '#transaction-form') {
-      setFormOpen(true);
       window.requestAnimationFrame(() => document.getElementById('transaction-form')?.scrollIntoView({ block: 'start' }));
+    }
+    if (location.hash === '#receivables') {
+      window.requestAnimationFrame(() => document.getElementById('receivables')?.scrollIntoView({ block: 'start' }));
     }
   }, [location.hash]);
   const filtered = data.transactions
     .filter(
       (item) =>
-        (filter === 'all' ||
-          item.type === filter ||
-          item.cashStatus === filter) &&
+        (filter === 'all' || item.type === filter) &&
+        (categoryFilter === 'all' || item.categoryId === categoryFilter) &&
+        (!startDateFilter || item.date >= startDateFilter) &&
+        (!endDateFilter || item.date <= endDateFilter) &&
         `${item.description ?? ''} ${item.date} ${item.categoryId ?? ''}`
           .toLowerCase()
           .includes(query.toLowerCase()),
@@ -994,7 +459,6 @@ export function TransactionsPage() {
     setDescription('');
     setCategoryId('');
     setCashStatus('settled');
-    setOpeningDayDisposition('');
     setConfirmationStatus('not_applicable');
     setError('');
     setFormOpen(false);
@@ -1018,7 +482,6 @@ export function TransactionsPage() {
       setDescription(item.description ?? '');
       setCategoryId(item.categoryId ?? '');
       setCashStatus(item.cashStatus);
-      setOpeningDayDisposition(item.openingDayDisposition ?? '');
       setConfirmationStatus(item.confirmationStatus);
       setError('');
       window.requestAnimationFrame(() =>
@@ -1044,10 +507,6 @@ export function TransactionsPage() {
   function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
-    if (!data.openingBalance && !editing?.paymentOccurrenceId) {
-      setError(t('transactions.openingRequired'));
-      return;
-    }
     if (
       !/^\d+$/.test(amount) ||
       Number(amount) <= 0 ||
@@ -1064,25 +523,16 @@ export function TransactionsPage() {
       setError(t('transactions.dueDateError'));
       return;
     }
-    if (showOpeningChoice && !openingDayDisposition) {
-      setError(t('transactions.openingDayError'));
-      return;
-    }
     const timestamp = systemClock.now().toISOString();
     save({
       id: editing?.id ?? uid(),
+      ...(editing?.openingDayDisposition ? { openingDayDisposition: editing.openingDayDisposition } : {}),
       type,
       amount: Number(amount),
       currency: 'MMK',
       date,
       ...(cashStatus === 'pending' || editing?.paymentOccurrenceId
         ? { dueDate: dueDate || editing?.dueDate || date }
-        : {}),
-      ...(openingDayDisposition
-        ? {
-            openingDayDisposition: openingDayDisposition as
-              'already_in_opening' | 'after_reference',
-          }
         : {}),
       categoryId: categoryId || null,
       description: description.trim() || undefined,
@@ -1114,16 +564,7 @@ export function TransactionsPage() {
         <button className="action-button" type="button" aria-expanded={formOpen} aria-controls="transaction-form" onClick={() => setFormOpen(!formOpen)}>
           <Plus size={18} aria-hidden="true" />{t('transactions.add')}
         </button>
-        <Link className="secondary-action" to="/capture"><ReceiptText size={18} aria-hidden="true" />{t('capture.nav')}</Link>
       </div>
-      {!data.openingBalance && !editing?.paymentOccurrenceId ? (
-        <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
-          {t('transactions.openingRequired')}{' '}
-          <Link className="font-semibold underline" to="/settings">
-            {t('settings.nav')}
-          </Link>
-        </p>
-      ) : null}
       <section
         id="transaction-form"
         hidden={!formOpen}
@@ -1137,10 +578,12 @@ export function TransactionsPage() {
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.type')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={type}
               onChange={(e) => {
-                setType(e.target.value as 'income' | 'expense');
+                const nextType = e.target.value as 'income' | 'expense';
+                setType(nextType);
+                if (nextType === 'income') { setCashStatus('settled'); setDueDate(''); }
                 setCategoryId('');
               }}
             >
@@ -1160,34 +603,33 @@ export function TransactionsPage() {
               required
             />
           </label>
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.date')}
-            <input
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </label>
+          <DatePickerField
+            id="transaction-date"
+            label={t('transaction.date')}
+            fieldClassName="grid gap-2 text-sm font-medium"
+            inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+            value={date}
+            onChange={setDate}
+            required
+          />
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.status')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={cashStatus}
               onChange={(e) =>
                 setCashStatus(e.target.value as 'settled' | 'pending')
               }
             >
               <option value="settled">{t('transaction.settled')}</option>
-              <option value="pending">{t('transaction.pending')}</option>
+              {type === 'expense' ? <option value="pending">{t('transaction.pending')}</option> : null}
             </select>
           </label>
           {editing?.paymentOccurrenceId && cashStatus === 'settled' ? (
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.confirmation')}
               <select
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+                className="app-select"
                 value={
                   confirmationStatus === 'not_applicable'
                     ? 'unconfirmed'
@@ -1207,23 +649,23 @@ export function TransactionsPage() {
             </label>
           ) : null}
           {cashStatus === 'pending' ? (
-            <label className="grid gap-2 text-sm font-medium">
-              {t('transaction.dueDate')}
-              <input
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-                type="date"
-                min={date}
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                required
-              />
-            </label>
+            <DatePickerField
+              id="transaction-due-date"
+              label={t('transaction.dueDate')}
+              fieldClassName="grid gap-2 text-sm font-medium"
+              inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+              min={date}
+              value={dueDate}
+              onChange={setDueDate}
+              required
+            />
           ) : null}
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.category')}
             <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select"
               value={categoryId}
+              required
               onChange={(e) => setCategoryId(e.target.value)}
             >
               <option value="">{t('transaction.uncategorized')}</option>
@@ -1252,33 +694,6 @@ export function TransactionsPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
-          {showOpeningChoice ? (
-            <fieldset className="grid gap-2 sm:col-span-2">
-              <legend className="text-sm font-semibold">
-                {t('transactions.openingDayPrompt')}
-              </legend>
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="opening-day"
-                  value="already_in_opening"
-                  checked={openingDayDisposition === 'already_in_opening'}
-                  onChange={(e) => setOpeningDayDisposition(e.target.value)}
-                />
-                {t('transactions.alreadyIncluded')}
-              </label>
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="opening-day"
-                  value="after_reference"
-                  checked={openingDayDisposition === 'after_reference'}
-                  onChange={(e) => setOpeningDayDisposition(e.target.value)}
-                />
-                {t('transactions.afterReference')}
-              </label>
-            </fieldset>
-          ) : null}
           {error ? (
             <p role="alert" className="text-sm text-red-800 sm:col-span-2">
               {error}
@@ -1286,7 +701,6 @@ export function TransactionsPage() {
           ) : null}
           <div className="flex gap-3 sm:col-span-2">
             <button
-              disabled={!data.openingBalance && !editing?.paymentOccurrenceId}
               className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white disabled:opacity-50"
             >
               {editing
@@ -1305,30 +719,32 @@ export function TransactionsPage() {
           </div>
         </form>
       </section>
-      <section className="surface-card activity-list-panel">
+      <section className="surface-card activity-list-panel transactions-records-panel">
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="grid flex-1 gap-1 text-sm font-medium">
             {t('transactions.search')}
             <input
-              className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
+              className="filter-control"
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
           <label className="grid gap-1 text-sm font-medium">
-            {t('transactions.filter')}
+            {t('transaction.type')}
             <select
-              className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
+              className="app-select app-select--sm"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
               <option value="all">{t('transactions.all')}</option>
               <option value="income">{t('transaction.income')}</option>
               <option value="expense">{t('transaction.expense')}</option>
-              <option value="pending">{t('transaction.pending')}</option>
             </select>
           </label>
+          <label className="grid gap-1 text-sm font-medium">{t('transaction.category')}<select className="app-select app-select--sm" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}><option value="all">{t('transactions.all')}</option>{data.categories.map((category) => <option key={category.id} value={category.id}>{t(`category.${category.id}`)}</option>)}</select></label>
+          <DatePickerField id="transaction-filter-start-date" label={t('transactions.fromDate', { defaultValue: 'From date' })} fieldClassName="filter-field grid gap-1 text-sm font-medium" inputClassName="filter-control" value={startDateFilter} onChange={setStartDateFilter} />
+          <DatePickerField id="transaction-filter-end-date" label={t('transactions.toDate', { defaultValue: 'To date' })} fieldClassName="filter-field grid gap-1 text-sm font-medium" inputClassName="filter-control" value={endDateFilter} onChange={setEndDateFilter} />
         </div>
         {undo ? (
           <div
@@ -1348,7 +764,7 @@ export function TransactionsPage() {
           </div>
         ) : null}
         {filtered.length ? (
-          <ul className="mt-4 divide-y divide-[#e4e9e2]">
+          <ul className="transaction-record-list mt-4 divide-y divide-[#e4e9e2]" tabIndex={0} aria-label={t('transactions.title')}>
             {filtered.map((item) => (
               <li
                 key={item.id}
@@ -1362,6 +778,8 @@ export function TransactionsPage() {
                   <p className="mt-1 text-sm text-muted">
                     {item.date} · {t(`transaction.${item.type}`)} ·{' '}
                     {t(`transaction.${item.cashStatus}`)}
+                    {' '}Â· {t(`source.${item.source}`)}
+                    {item.ocrReviewStatus === 'reviewed' ? ` Â· ${t('capture.reviewed', { defaultValue: 'Reviewed' })}` : ''}
                     {item.dueDate
                       ? ` · ${t('transaction.dueDate')}: ${item.dueDate}`
                       : ''}
@@ -1397,6 +815,15 @@ export function TransactionsPage() {
           <p className="mt-5 text-muted">{t('transactions.empty')}</p>
         )}
       </section>
+      <ReceivablesPanel items={data.receivables} onSettle={settleReceivable} />
     </>
   );
+}
+
+function ReceivablesPanel({ items, onSettle }: { items: import('../domain/types').Receivable[]; onSettle: (id: string) => void }) {
+  const { t } = useTranslation();
+  return <section id="receivables" className="surface-card activity-list-panel receivables-panel">
+    <div className="section-heading-row"><div><h2>{t('dashboard.receivables', { defaultValue: 'Receivables' })}</h2><p className="text-muted">{t('transactions.receivablesHelp', { defaultValue: 'Unpaid amounts owed to you. Marking one paid records income once.' })}</p></div><Link className="text-link" to="/add/receivable">{t('add.receivableTitle', { defaultValue: 'Record a receivable' })}</Link></div>
+    {items.length ? <ul className="mt-4 divide-y divide-[#e4e9e2]">{items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><p className="font-semibold">{item.counterparty}</p><p className="text-sm text-muted">{item.description || item.date} · {t(`receivable.${item.status}`, { defaultValue: item.status === 'paid' ? 'Paid' : 'Unpaid' })}{item.settledAt ? ` · Settled ${item.settledAt.slice(0, 10)}` : ''}</p></div><div className="flex items-center gap-3"><strong>{money(item.amount)} MMK</strong>{item.status === 'unpaid' ? <button className="secondary-action" type="button" onClick={() => onSettle(item.id)}>{t('receivable.markPaid', { defaultValue: 'Mark paid' })}</button> : null}</div></li>)}</ul> : <p className="mt-4 text-muted">{t('receivable.empty', { defaultValue: 'No receivables recorded yet.' })}</p>}
+  </section>;
 }

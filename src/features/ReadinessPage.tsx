@@ -14,6 +14,7 @@ export function ReadinessPage() {
   const completedDocuments = readinessDocumentIds.filter(
     (id) => data.checklist[id],
   ).length;
+  const missingChecks = checks.filter((check) => !check.complete);
 
   return (
     <>
@@ -53,6 +54,7 @@ export function ReadinessPage() {
               </span>
               <div>
                 <p className="font-medium">{t(`readiness.checks.${id}`)}</p>
+                <p className={`mt-1 text-sm font-semibold ${complete ? 'text-green-800' : 'text-amber-800'}`}>{t(`readiness.status.${complete ? 'complete' : 'missing'}`, { defaultValue: complete ? 'Complete' : 'Missing' })}</p>
                 <p className="mt-1 text-sm text-muted">
                   {values
                     ? t('readiness.categorizedCount', values)
@@ -64,19 +66,17 @@ export function ReadinessPage() {
             </li>
           ))}
         </ul>
+        <p className="mt-5 rounded-xl bg-canvas p-4 text-sm text-muted">
+          {missingChecks.length ? `${t('readiness.missingSummary', { defaultValue: 'Still missing:' })} ${missingChecks.map((check) => t(`readiness.checks.${check.id}`)).join(', ')}. ${t('readiness.nextStep', { defaultValue: 'Add or review records to update these checks.' })}` : t('readiness.allComplete', { defaultValue: 'All six readiness items are complete.' })}
+        </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          {!data.openingBalance ? (
-            <Link
-              className="min-h-11 rounded-xl border border-[#bccbc0] px-4 py-2 text-sm font-semibold"
-              to="/settings"
-            >
-              {t('readiness.openingAction')}
-            </Link>
-          ) : null}
           <Link
             className="min-h-11 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
-            to="/transactions"
+            to="/add"
           >
+            {t('readiness.addAction', { defaultValue: 'Add a record' })}
+          </Link>
+          <Link className="min-h-11 rounded-xl border border-[#bccbc0] px-4 py-2 text-sm font-semibold" to="/transactions">
             {t('readiness.transactionsAction')}
           </Link>
         </div>

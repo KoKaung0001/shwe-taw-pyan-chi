@@ -14,6 +14,22 @@
   "record": {
     "action": "Record"
   },
+  "add": {
+    "nav": "Add",
+    "title": "Add a record",
+    "subtitle": "Choose how you want to record this activity.",
+    "manualTitle": "Manual entry",
+    "manualBody": "Record income or an expense with its date, category, and details.",
+    "uploadTitle": "Upload receipt or screenshot",
+    "uploadBody": "Review simulated sample extraction and confirm before saving.",
+    "receivableTitle": "Record a receivable",
+    "receivableBody": "Track money a client or customer owes you separately from received income.",
+    "receivableExplain": "This amount is tracked as unpaid and will not count as received income.",
+    "payer": "Client or payer",
+    "receivableError": "Check the required fields and try again.",
+    "receivableSaved": "Receivable saved as unpaid.",
+    "saveReceivable": "Save receivable"
+  },
   "payments": {
     "nav": "Payments",
     "title": "Payments",
@@ -27,7 +43,7 @@
     "nav": "More",
     "title": "More tools",
     "eyebrow": "SUPPORTING TOOLS",
-    "description": "Ask about saved records, check record completeness, or update your starting point."
+    "description": "Ask about saved records and check record completeness."
   },
   "prototype": "FRONTEND PROTOTYPE",
   "phase": "M8 · Demo and security",
@@ -49,22 +65,7 @@
     "edit": "Edit",
     "delete": "Delete"
   },
-  "opening": {
-    "title": "Opening balance",
-    "amount": "Opening amount (MMK)",
-    "amountPlaceholder": "0",
-    "referenceAt": "Balance date and time",
-    "save": "Save opening balance",
-    "update": "Update opening balance",
-    "saved": "Opening balance saved.",
-    "futureError": "The opening reference time cannot be in the future.",
-    "invalidLocalTime": "Choose a valid local date and time."
-  },
   "balance": {
-    "available": "Recorded available balance",
-    "netMovement": "Net cash movement",
-    "asOf": "As of {{date}}",
-    "reviewOpeningDay": "{{count}} transaction(s) on the opening date need a timing choice:",
     "unconfirmedDisclosure": "The balance includes {{count}} auto-recorded payment assumption(s) that still need your confirmation."
   },
   "transaction": {
@@ -109,8 +110,8 @@
     "recurring": "Scheduled payment"
   },
   "transactions": {
-    "title": "Activity",
-    "nav": "Activity",
+    "title": "Transactions",
+    "nav": "Transactions",
     "description": "Keep everyday income and expenses together.",
     "items": [
       "Add, edit and search records",
@@ -124,13 +125,8 @@
     "linkedEditHelp": "Changing the transaction date records when it was actually paid. The original scheduled due date stays unchanged.",
     "save": "Save transaction",
     "saveCorrection": "Save correction",
-    "openingRequired": "Set an opening balance before adding transactions.",
     "futureSettled": "A paid transaction cannot have a future date.",
     "dueDateError": "A pending transaction needs a due date on or after its transaction date.",
-    "openingDayError": "Choose whether this transaction is already represented in the opening balance.",
-    "openingDayPrompt": "How does this transaction relate to the opening balance?",
-    "alreadyIncluded": "It was already included in the opening balance",
-    "afterReference": "It happened after the opening balance time",
     "search": "Search records",
     "filter": "Show",
     "all": "All transactions",
@@ -143,6 +139,7 @@
   "dashboard": {
     "title": "Your financial picture, in one place.",
     "nav": "Home",
+    "welcome": "Welcome, {{name}}",
     "nextPayments": "Next payments",
     "allPayments": "All payments",
     "noUpcoming": "No upcoming payments.",
@@ -153,15 +150,35 @@
     "periodSummary": "Cash movement by period",
     "reportingPeriod": "Reporting period",
     "thisMonth": "This month",
+    "thisWeek": "This week",
+    "lastWeek": "Last week",
     "lastMonth": "Last month",
     "last30Days": "Last 30 days",
     "periodIncome": "Income",
     "periodExpenses": "Expenses",
+    "netBalance": "Net balance",
+    "receivables": "Receivables",
+    "receivablesHelp": "Unpaid amounts owed to you, separate from expenses.",
+    "netHelp": "Recorded income minus recorded expenses; not a bank balance.",
+    "chartTitle": "Income and expenses",
+    "chartAccessible": "Daily income, expenses, and cumulative net change from {{startDate}} to {{endDate}}.",
+    "cashFlowChartAccessible": "Daily income and expense bars from {{startDate}} to {{endDate}}.",
+    "netChangeChartAccessible": "Daily cumulative net change line and expense bars from {{startDate}} to {{endDate}}.",
+    "chartDescription": "Use the left and right arrow keys to inspect each date. The chart shows cumulative net change from settled income and expenses.",
+    "cashFlowChartDescription": "Use the left and right arrow keys to inspect each date. Income and expenses share the same amount scale.",
+    "chartViews": "Chart view",
+    "cashFlowView": "Cash flow",
+    "netChangeView": "Net change",
+    "financialSummary": "Selected period financial summary",
+    "dailyNetChange": "Daily net change",
+    "cumulativeNetChange": "Cumulative net change",
+    "emptyPeriod": "No recorded income or expenses in this period yet.",
+    "context": "Your recorded activity at a glance.",
     "settledOnly": "Settled transactions only. Pending items are excluded.",
     "monthlyChart": "Monthly income and expenses",
     "monthlyChartAccessible": "Bar chart comparing settled income and expenses over six months.",
     "items": [
-      "Recorded available balance and net cash movement",
+      "Settled income and expenses by reporting period",
       "Reporting periods and income versus expenses",
       "Outstanding payments and early warnings"
     ]
@@ -187,6 +204,7 @@
     "reviewHelp": "",
     "confirmReview": "I reviewed and confirm these transaction fields.",
     "reviewRequired": "Review the fields and confirm them before saving.",
+    "reviewConfirm": "I reviewed and confirm these transaction fields.",
     "saveReviewed": "Save reviewed transaction",
     "saved": "Reviewed transaction saved. The image was not stored.",
     "items": [
@@ -257,76 +275,23 @@
     "confirmed_paid": "Confirmed paid",
     "explicitly_unpaid": "Marked unpaid"
   },
-  "insights": {
-    "nav": "Insights",
-    "title": "Forecast and insights",
-    "description": "Understand upcoming obligations and patterns in your records.",
-    "ruleTitle": "Signals from your records",
-    "ruleHelp": "Rule based. Not financial advice.",
-    "noSignals": "No signals meet the current data thresholds.",
-    "evidenceRow": "{{description}} · recorded {{date}} · {{amount}} MMK{{due}}",
-    "evidenceDueDate": " · due {{date}}",
-    "openingBalanceRecord": "Recorded opening balance",
-    "unnamedRecord": "Unlabelled transaction",
-    "overdueTitle": "Overdue obligations",
-    "overdueObserved": "{{count}} unpaid item(s), totaling {{amount}} MMK, have a due date before today.",
-    "overdueInterpretation": "Review these items and update their payment status when you have confirmed it.",
-    "upcomingTitle": "Due within seven days",
-    "upcomingObserved": "{{count}} unpaid item(s), totaling {{amount}} MMK, are due soon.",
-    "upcomingInterpretation": "Check that the expected dates and amounts still match your plans.",
-    "unusualTitle": "Expense above its usual range",
-    "unusualObserved": "A recorded expense of {{amount}} MMK is more than twice the prior median of {{median}} MMK for this category.",
-    "unusualInterpretation": "This is a comparison with your own earlier records, not a judgement about the purchase.",
-    "spendingSpikeTitle": "Monthly expenses increased",
-    "spendingSpikeObserved": "This month's settled expenses are {{current}} MMK, compared with {{previous}} MMK last month.",
-    "spendingSpikeInterpretation": "Both months have at least three settled expense records; compare the underlying entries for context.",
-    "concentrationTitle": "Expenses concentrated in one category",
-    "concentrationObserved": "{{percent}}% of this month's settled expenses ({{amount}} MMK) are in {{category}}.",
-    "concentrationInterpretation": "This describes the current record mix and does not label a category as good or bad.",
-    "incompleteTitle": "Transactions without a category",
-    "incompleteObserved": "{{count}} settled transaction(s) have no category recorded.",
-    "incompleteInterpretation": "Adding a category can make later summaries more useful.",
-    "duplicatesTitle": "Possible duplicate transactions",
-    "duplicatesObserved": "{{count}} exact-match pair(s) have enough matching details to review.",
-    "duplicatesInterpretation": "Check each pair before removing anything. Legitimate repeat payments can look similar.",
-    "shortfallTitle": "Projected cash shortfall",
-    "shortfallObserved": "The expected case projects {{base}} MMK shortfall; the delayed-inflow case projects {{delayed}} MMK.",
-    "shortfallInterpretation": "This estimate uses your opening balance and recorded obligations; it is not a verified account balance.",
-    "duplicatesHelp": "Review both records before keeping or removing one.",
-    "duplicateReviewTitle": "Duplicate review",
-    "noDuplicates": "No unreviewed exact-match pairs found.",
-    "removeChoice": "Choose the record to remove",
-    "firstRecord": "First record",
-    "secondRecord": "Second record",
-    "firstChoice": "First · {{description}} · {{source}}",
-    "secondChoice": "Second · {{description}} · {{source}}",
-    "keepBoth": "Keep both",
-    "removeDuplicate": "Remove selected record",
-    "confirmRemove": "Remove the selected transaction? This action cannot be undone.",
-    "items": [
-      "Estimated cash-flow scenarios",
-      "Rule-based demo insights with evidence",
-      "Review possible duplicates or keep both"
-    ]
-  },
-  "forecast": {
-    "openingRequired": "Set an opening balance to view the cash-flow forecast.",
-    "disclaimer": "Estimated from your recorded available balance, unpaid obligations and scheduled occurrences. This is not a bank balance or financial advice. The delayed-inflow case moves expected income seven days later.",
-    "baseCase": "Expected dates",
-    "lateCase": "Income delayed by seven days",
-    "lowPoint": "Lowest projected balance",
-    "noShortfall": "No projected cash shortfall",
-    "shortfall": "Projected shortfall: {{amount}} MMK",
-    "dailyTitle": "14-day daily forecast",
-    "date": "Date",
-    "inflows": "Inflows",
-    "outflows": "Outflows",
-    "baseBalance": "Expected balance",
-    "lateBalance": "Delayed-income balance"
-  },
   "chat": {
     "title": "Ask about your records",
-    "nav": "Ask about records",
+    "nav": "AI Assistant",
+    "demoLabel": "Demo assistant",
+    "suggestionsTitle": "Try asking",
+    "suggestedQuestions": [
+      "What is my income this week?",
+      "How much did I spend this week?",
+      "What is my highest expense category this week?",
+      "How much do I have in outstanding receivables?"
+    ],
+    "weeklyIncomeAnswer": "This week ({{startDate}} to {{endDate}}), recorded income is {{amount}} MMK.",
+    "weeklyExpensesAnswer": "This week ({{startDate}} to {{endDate}}), recorded expenses are {{amount}} MMK.",
+    "weeklyCategoryAnswer": "This week ({{startDate}} to {{endDate}}), your highest expense category is {{category}} at {{amount}} MMK.",
+    "noWeeklyTransactionsAnswer": "There are no settled expenses this week ({{startDate}} to {{endDate}}).",
+    "noWeeklyIncomeAnswer": "There is no settled income this week ({{startDate}} to {{endDate}}).",
+    "receivablesAnswer": "You have {{amount}} MMK in {{count}} unpaid receivable(s).",
     "description": "A rule-based demo grounded in records saved in this browser.",
     "limits": "Rule-based demo only. Answers use records currently saved in this browser. Unsupported questions and requests for financial, legal or tax advice are declined.",
     "questionLabel": "Ask about your records",
@@ -334,12 +299,13 @@
     "ask": "Ask",
     "answerTitle": "Answer from your records",
     "evidence": "Supporting records",
-    "unsupportedAnswer": "I can answer questions about recorded totals, expenses, categories, owed payments, overdue items, the cash-flow forecast, and document checklist status. I can't predict loan approval or provide financial, legal, or tax advice.",
+    "evidenceRow": "{{description}} Â· recorded {{date}} Â· {{amount}} MMK{{due}}",
+    "evidenceDueDate": " Â· due {{date}}",
+    "unnamedRecord": "Unlabelled transaction",
+    "unsupportedAnswer": "I can answer questions about recorded totals, expenses, categories, owed payments, overdue items, and document checklist status. I can't provide projections, predict loan approval, or give financial, legal, or tax advice.",
     "documentsAnswer": "You marked {{completed}} of {{total}} supporting document checklist items as available.",
     "overdueAnswer": "{{count}} unpaid item(s) are overdue, totaling {{amount}} MMK.",
     "outstandingAnswer": "You have {{receivable}} MMK in unpaid incoming payments and {{payable}} MMK in unpaid obligations.",
-    "forecastMissingOpening": "Set an opening balance before asking about the cash-flow forecast.",
-    "forecastAnswer": "The expected case's lowest projected balance is {{minimum}} MMK. The delayed-inflow case has a projected shortfall of {{delayedShortfall}} MMK.",
     "topExpenseAnswer": "Your largest settled expense this month is {{amount}} MMK.",
     "categoryAnswer": "The largest expense category this month is {{category}} at {{amount}} MMK.",
     "periodAnswer": "This month, recorded settled income is {{income}} MMK and expenses are {{expenses}} MMK, for net movement of {{net}} MMK.",
@@ -352,7 +318,7 @@
   },
   "readiness": {
     "title": "Prepare your records",
-    "nav": "Record readiness",
+    "nav": "Credit Readiness",
     "description": "Review record checks and your supporting-document checklist.",
     "description": "Review how complete your records are and keep track of supporting documents.",
     "disclaimer": "This checklist describes records you have entered or say you have available. It is not a credit score, creditworthiness assessment, or loan approval prediction. No document files are uploaded here.",
@@ -367,20 +333,26 @@
       "missing": "Not found in your records yet."
     },
     "checks": {
-      "opening_balance": "Opening balance and reference date",
-      "income_records": "At least one income record",
-      "expense_records": "At least one expense record",
-      "categorized_records": "Transactions have categories"
+      "income_records": "Income records available",
+      "expense_records": "Expense records available",
+      "receipt_evidence": "Receipt evidence available",
+      "transaction_complete": "Transaction records reasonably complete",
+      "identity_document": "Identity-document availability recorded",
+      "invoice_payment_evidence": "Invoice or payment evidence available"
     },
     "documents": {
-      "income_records": "Income records or invoices",
-      "expense_receipts": "Receipts or other expense evidence",
-      "account_statements": "Bank or mobile wallet statements",
-      "business_registration": "Business registration or license, if applicable",
-      "identity_document": "Identity document, if needed for your own records"
+      "identity_document": "Identity-document availability",
+      "invoice_payment_evidence": "Invoice or payment evidence"
     },
-    "openingAction": "Set opening balance",
     "transactionsAction": "Review transactions",
+    "missingSummary": "Still missing:",
+    "nextStep": "Add or review records to update these checks.",
+    "allComplete": "All six readiness items are complete.",
+    "addAction": "Add a record",
+    "status": {
+      "complete": "Complete",
+      "missing": "Missing"
+    },
     "items": [
       "Record-completeness checks",
       "Supporting document checklist",
@@ -391,10 +363,15 @@
     "title": "Settings",
     "nav": "Settings",
     "timeZone": "Time zone",
+    "resetTitle": "Reset demo data",
+    "resetAction": "Reset demo data",
+    "resetHelp": "Restore the prototype’s initial synthetic records. This only changes data saved in this browser.",
+    "resetConfirmTitle": "Reset demo data?",
+    "resetConfirmBody": "Your saved changes in this browser will be replaced with the initial synthetic dataset.",
+    "resetDone": "Demo data has been restored.",
     "items": [
-      "Opening balance with its reference date and time",
-      "Automatic daily carry-forward",
-      "Synthetic data reset and forecast preferences"
+      "Time zone preference",
+      "Synthetic data reset"
     ]
   }
 }

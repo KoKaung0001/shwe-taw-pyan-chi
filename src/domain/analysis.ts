@@ -1,5 +1,6 @@
 import {
-  buildCashFlowForecast,
+  getReportingRange,
+  sumOutstandingReceivables,
   summarizeOutstanding,
   summarizePeriod,
 } from './reporting';
@@ -145,16 +146,7 @@ export function findPossibleDuplicates(input: AppData): DuplicateCandidate[] {
 export type InsightEvidence = Pick<
   Transaction,
   'id' | 'date' | 'amount' | 'description'
-> & { dueDate?: string; descriptionKey?: 'openingBalanceRecord' };
-export interface RuleInsight {
-  id: string;
-  severity: 'info' | 'attention';
-  titleKey: string;
-  observedKey: string;
-  values: Record<string, string | number>;
-  interpretationKey: string;
-  evidence: InsightEvidence[];
-}
+> & { dueDate?: string };
 
 const evidenceFor = (transactions: readonly Transaction[]): InsightEvidence[] =>
   transactions
@@ -166,270 +158,6 @@ const evidenceFor = (transactions: readonly Transaction[]): InsightEvidence[] =>
       description: description ?? '',
       ...(dueDate ? { dueDate } : {}),
     }));
-
-const forecastEvidence = (data: AppData): InsightEvidence[] => {
-  const opening = data.openingBalance
-    ? [
-        {
-          id: 'opening-balance',
-          date: data.openingBalance.referenceAt.slice(0, 10),
-          amount: data.openingBalance.amount,
-          description: '',
-          descriptionKey: 'openingBalanceRecord' as const,
-        },
-      ]
-    : [];
-  const pending = data.transactions
-    .filter((item) => item.cashStatus === 'pending' && item.dueDate)
-    .map((item) => ({
-      id: item.id,
-      date: item.date,
-      dueDate: item.dueDate,
-      amount: item.amount,
-      description: item.description ?? '',
-    }));
-  const scheduled = data.paymentOccurrences.flatMap((occurrence) => {
-    if (occurrence.status !== 'scheduled') return [];
-    const rule = data.scheduleRules.find(
-      (item) => item.id === occurrence.ruleId,
-    );
-    return !rule?.active
-      ? []
-      : [
-          {
-            id: occurrence.id,
-            date: occurrence.originalDueDate,
-            dueDate: occurrence.originalDueDate,
-            amount: rule.amount,
-            description: rule.description ?? '',
-          },
-        ];
-  });
-  return [...opening, ...pending, ...scheduled].slice(0, 5);
-};
-
-/** Rule-based signals expose their recorded evidence and avoid unsupported predictions. */
-export function buildRuleInsights(
-  input: AppData,
-  today: string,
-): RuleInsight[] {
-  const data = appDataSchema.parse(input);
-  const insights: RuleInsight[] = [];
-  const outstanding = summarizeOutstanding(data, today);
-  const overdue = [...outstanding.receivables, ...outstanding.payables].filter(
-    (item) => item.overdue,
-  );
-  if (overdue.length) {
-    insights.push({
-      id: 'overdue',
-      severity: 'attention',
-      titleKey: 'overdueTitle',
-      observedKey: 'overdueObserved',
-      values: {
-        count: overdue.length,
-        amount: overdue.reduce((sum, item) => sum + item.transaction.amount, 0),
-      },
-      interpretationKey: 'overdueInterpretation',
-      evidence: evidenceFor(overdue.map((item) => item.transaction)),
-    });
-  }
-  const upcoming = [...outstanding.receivables, ...outstanding.payables].filter(
-    (item) => !item.overdue && item.dueDate <= addDays(today, 7),
-  );
-  if (upcoming.length) {
-    insights.push({
-      id: 'upcoming',
-      severity: 'info',
-      titleKey: 'upcomingTitle',
-      observedKey: 'upcomingObserved',
-      values: {
-        count: upcoming.length,
-        amount: upcoming.reduce(
-          (sum, item) => sum + item.transaction.amount,
-          0,
-        ),
-      },
-      interpretationKey: 'upcomingInterpretation',
-      evidence: evidenceFor(upcoming.map((item) => item.transaction)),
-    });
-  }
-
-  const currentRange = { startDate: `${today.slice(0, 7)}-01`, endDate: today };
-  const previousMonthDate = new Date(`${today.slice(0, 7)}-01T00:00:00.000Z`);
-  previousMonthDate.setUTCMonth(previousMonthDate.getUTCMonth() - 1);
-  const previousMonth = previousMonthDate.toISOString().slice(0, 7);
-  const currentExpenses = data.transactions.filter(
-    (item) =>
-      item.cashStatus === 'settled' &&
-      item.type === 'expense' &&
-      item.date >= currentRange.startDate &&
-      item.date <= today,
-  );
-  const previousExpenses = data.transactions.filter(
-    (item) =>
-      item.cashStatus === 'settled' &&
-      item.type === 'expense' &&
-      item.date.startsWith(previousMonth),
-  );
-  const currentTotal = currentExpenses.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-  const previousTotal = previousExpenses.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-  const historicalByCategory = new Map<string, number[]>();
-  for (const item of data.transactions) {
-    if (
-      item.cashStatus !== 'settled' ||
-      item.type !== 'expense' ||
-      !item.categoryId ||
-      item.date >= currentRange.startDate
-    )
-      continue;
-    const values = historicalByCategory.get(item.categoryId) ?? [];
-    values.push(item.amount);
-    historicalByCategory.set(item.categoryId, values);
-  }
-  const medians = new Map<string, number>();
-  for (const [categoryId, values] of historicalByCategory) {
-    if (values.length < 5) continue;
-    values.sort((a, b) => a - b);
-    const middle = Math.floor(values.length / 2);
-    medians.set(
-      categoryId,
-      values.length % 2
-        ? values[middle]
-        : (values[middle - 1] + values[middle]) / 2,
-    );
-  }
-  const unusual = currentExpenses.flatMap((transaction) => {
-    const median = transaction.categoryId
-      ? medians.get(transaction.categoryId)
-      : undefined;
-    return median !== undefined && transaction.amount > median * 2
-      ? [{ transaction, median }]
-      : [];
-  });
-  if (unusual.length) {
-    const item = unusual.sort(
-      (a, b) => b.transaction.amount - a.transaction.amount,
-    )[0];
-    insights.push({
-      id: 'unusual-expense',
-      severity: 'attention',
-      titleKey: 'unusualTitle',
-      observedKey: 'unusualObserved',
-      values: { amount: item.transaction.amount, median: item.median },
-      interpretationKey: 'unusualInterpretation',
-      evidence: evidenceFor([item.transaction]),
-    });
-  }
-  if (
-    currentExpenses.length >= 3 &&
-    previousExpenses.length >= 3 &&
-    previousTotal > 0 &&
-    currentTotal >= previousTotal * 1.5
-  ) {
-    insights.push({
-      id: 'spending-spike',
-      severity: 'attention',
-      titleKey: 'spendingSpikeTitle',
-      observedKey: 'spendingSpikeObserved',
-      values: { current: currentTotal, previous: previousTotal },
-      interpretationKey: 'spendingSpikeInterpretation',
-      evidence: evidenceFor(currentExpenses),
-    });
-  }
-
-  const categorized = new Map<string, Transaction[]>();
-  for (const transaction of currentExpenses) {
-    const category = transaction.categoryId ?? 'uncategorized';
-    const group = categorized.get(category) ?? [];
-    group.push(transaction);
-    categorized.set(category, group);
-  }
-  const largestCategory = [...categorized.entries()].sort(
-    (a, b) =>
-      b[1].reduce((sum, item) => sum + item.amount, 0) -
-      a[1].reduce((sum, item) => sum + item.amount, 0),
-  )[0];
-  if (currentExpenses.length >= 3 && largestCategory) {
-    const categoryTotal = largestCategory[1].reduce(
-      (sum, item) => sum + item.amount,
-      0,
-    );
-    if (categoryTotal / currentTotal >= 0.5) {
-      insights.push({
-        id: 'concentration',
-        severity: 'info',
-        titleKey: 'concentrationTitle',
-        observedKey: 'concentrationObserved',
-        values: {
-          category: largestCategory[0],
-          amount: categoryTotal,
-          percent: Math.round((categoryTotal / currentTotal) * 100),
-        },
-        interpretationKey: 'concentrationInterpretation',
-        evidence: evidenceFor(largestCategory[1]),
-      });
-    }
-  }
-
-  const uncategorized = data.transactions.filter(
-    (item) => item.cashStatus === 'settled' && !item.categoryId,
-  );
-  if (uncategorized.length) {
-    insights.push({
-      id: 'incomplete-records',
-      severity: 'info',
-      titleKey: 'incompleteTitle',
-      observedKey: 'incompleteObserved',
-      values: { count: uncategorized.length },
-      interpretationKey: 'incompleteInterpretation',
-      evidence: evidenceFor(uncategorized),
-    });
-  }
-
-  const duplicates = findPossibleDuplicates(data);
-  if (duplicates.length) {
-    insights.push({
-      id: 'possible-duplicates',
-      severity: 'attention',
-      titleKey: 'duplicatesTitle',
-      observedKey: 'duplicatesObserved',
-      values: { count: duplicates.length },
-      interpretationKey: 'duplicatesInterpretation',
-      evidence: [],
-    });
-  }
-
-  if (data.openingBalance) {
-    const forecast = buildCashFlowForecast(data, today);
-    if (forecast.base.shortfall || forecast.lateInflows.shortfall) {
-      insights.push({
-        id: 'cash-shortfall',
-        severity: 'attention',
-        titleKey: 'shortfallTitle',
-        observedKey: 'shortfallObserved',
-        values: {
-          base: forecast.base.shortfall,
-          delayed: forecast.lateInflows.shortfall,
-        },
-        interpretationKey: 'shortfallInterpretation',
-        evidence: forecastEvidence(data),
-      });
-    }
-  }
-  return insights;
-}
-
-function addDays(date: string, days: number): string {
-  const result = new Date(`${date}T00:00:00.000Z`);
-  result.setUTCDate(result.getUTCDate() + days);
-  return result.toISOString().slice(0, 10);
-}
 
 export interface ChatAnswer {
   supported: boolean;
@@ -455,7 +183,7 @@ export function answerRecordedQuestion(
   const query = question.trim().toLocaleLowerCase();
   if (!query) return unsupportedAnswer();
   if (
-    /loan|credit score|approval|legal|tax advice|financial advice|invest/.test(
+    /loan|credit score|approval|legal|tax advice|financial advice|invest|forecast|shortfall|projection/.test(
       query,
     )
   )
@@ -469,7 +197,7 @@ export function answerRecordedQuestion(
       supported: true,
       messageKey: 'chat.documentsAnswer',
       values: { completed, total },
-      evidence: forecastEvidence(data),
+      evidence: [],
     };
   }
   if (/overdue|late payment/.test(query)) {
@@ -487,13 +215,17 @@ export function answerRecordedQuestion(
       evidence: evidenceFor(items.map((item) => item.transaction)),
     };
   }
+  if (/receivable|money .*owed to me/.test(query)) {
+    const unpaid = data.receivables.filter((item) => item.status === 'unpaid');
+    return { supported: true, messageKey: 'chat.receivablesAnswer', values: { amount: sumOutstandingReceivables(data), count: unpaid.length }, evidence: [] };
+  }
   if (/owe|outstanding|owed/.test(query)) {
     const result = summarizeOutstanding(data, today);
     return {
       supported: true,
       messageKey: 'chat.outstandingAnswer',
       values: {
-        receivable: result.receivableTotal,
+        receivable: sumOutstandingReceivables(data),
         payable: result.payableTotal,
       },
       evidence: evidenceFor(
@@ -503,29 +235,21 @@ export function answerRecordedQuestion(
       ),
     };
   }
-  if (/forecast|shortfall|cash flow/.test(query)) {
-    if (!data.openingBalance)
-      return {
-        supported: true,
-        messageKey: 'chat.forecastMissingOpening',
-        values: {},
-        evidence: [],
-      };
-    const result = buildCashFlowForecast(data, today);
-    return {
-      supported: true,
-      messageKey: 'chat.forecastAnswer',
-      values: {
-        minimum: result.base.minimumBalance ?? 0,
-        delayedShortfall: result.lateInflows.shortfall,
-      },
-      evidence: forecastEvidence(data),
-    };
+  const weekRange = getReportingRange('this_week', today);
+  const weeklyPeriod = summarizePeriod(data.transactions, weekRange);
+  const weeklyExpenses = data.transactions.filter((item) => item.cashStatus === 'settled' && item.type === 'expense' && item.date >= weekRange.startDate && item.date <= weekRange.endDate);
+  const period = summarizePeriod(data.transactions, { startDate: `${today.slice(0, 7)}-01`, endDate: today });
+  if (/income/.test(query) && /week/.test(query)) {
+    const matches = data.transactions.filter((item) => item.cashStatus === 'settled' && item.type === 'income' && item.date >= weekRange.startDate && item.date <= weekRange.endDate);
+    return { supported: true, messageKey: matches.length ? 'chat.weeklyIncomeAnswer' : 'chat.noWeeklyIncomeAnswer', values: { amount: weeklyPeriod.income, startDate: weekRange.startDate, endDate: weekRange.endDate }, evidence: evidenceFor(matches) };
   }
-  const period = summarizePeriod(data.transactions, {
-    startDate: `${today.slice(0, 7)}-01`,
-    endDate: today,
-  });
+  if (/(spend|expense)/.test(query) && /week/.test(query) && !/categor/.test(query)) return { supported: true, messageKey: weeklyExpenses.length ? 'chat.weeklyExpensesAnswer' : 'chat.noWeeklyTransactionsAnswer', values: { amount: weeklyPeriod.expenses, startDate: weekRange.startDate, endDate: weekRange.endDate }, evidence: evidenceFor(weeklyExpenses) };
+  if (/categor/.test(query) && /week/.test(query)) {
+    const byCategory = new Map<string, number>();
+    for (const item of weeklyExpenses) { const category = item.categoryId ?? 'uncategorized'; byCategory.set(category, (byCategory.get(category) ?? 0) + item.amount); }
+    const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1])[0];
+    return top ? { supported: true, messageKey: 'chat.weeklyCategoryAnswer', values: { category: top[0], amount: top[1], startDate: weekRange.startDate, endDate: weekRange.endDate }, evidence: evidenceFor(weeklyExpenses.filter((item) => (item.categoryId ?? 'uncategorized') === top[0])) } : { supported: true, messageKey: 'chat.noWeeklyTransactionsAnswer', values: { startDate: weekRange.startDate, endDate: weekRange.endDate }, evidence: [] };
+  }
   if (/top expense|largest expense|biggest expense/.test(query)) {
     const top = data.transactions
       .filter(

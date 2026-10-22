@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   answerRecordedQuestion,
-  buildRuleInsights,
   findPossibleDuplicates,
 } from './analysis';
 import { appDataSchema, emptyAppData, type Transaction } from './types';
@@ -86,64 +85,15 @@ describe('rule-based analysis', () => {
     ).toHaveLength(1);
   });
 
-  it('reports overdue obligations with transaction evidence', () => {
-    const data = {
-      ...emptyAppData(),
-      transactions: [
-        transaction({
-          id: 'late-bill',
-          date: '2026-10-12',
-          cashStatus: 'pending',
-          dueDate: '2026-10-20',
-          description: 'Power bill',
-        }),
-      ],
-    };
-    const signals = buildRuleInsights(data, '2026-10-21');
-    expect(signals[0]).toMatchObject({
-      id: 'overdue',
-      values: { count: 1, amount: 20_000 },
-    });
-    expect(signals[0].evidence[0]).toMatchObject({
-      id: 'late-bill',
-      date: '2026-10-12',
-    });
-  });
-
-  it('requires enough records before reporting spending patterns', () => {
-    const previous = [5_000, 6_000, 7_000, 8_000, 9_000].map((amount, index) =>
-      transaction({
-        id: `history-${index}`,
-        amount,
-        date: `2026-08-${String(index + 1).padStart(2, '0')}`,
-      }),
-    );
-    const priorMonth = [1_000, 1_000, 1_000].map((amount, index) =>
-      transaction({
-        id: `previous-${index}`,
-        amount,
-        date: `2026-09-${String(index + 1).padStart(2, '0')}`,
-      }),
-    );
-    const current = [2_000, 2_000, 15_000].map((amount, index) =>
-      transaction({
-        id: `current-${index}`,
-        amount,
-        date: `2026-10-${String(index + 2).padStart(2, '0')}`,
-      }),
-    );
-    const signals = buildRuleInsights(
-      {
-        ...emptyAppData(),
-        transactions: [...previous, ...priorMonth, ...current],
-      },
+  it('declines forecast and balance projection questions', () => {
+    const answer = answerRecordedQuestion(
+      { ...emptyAppData(), openingBalance: { amount: 500_000, referenceAt: '2026-10-01T00:00:00Z', timeZone: 'Asia/Rangoon' } },
       '2026-10-21',
+      'Will my balance have a shortfall in the forecast?',
     );
-    expect(signals.map((signal) => signal.id)).toContain('unusual-expense');
-    expect(signals.map((signal) => signal.id)).toContain('spending-spike');
-    expect(signals.map((signal) => signal.id)).toContain('concentration');
+    expect(answer.supported).toBe(false);
+    expect(answer.messageKey).toBe('chat.unsupportedAnswer');
   });
-
   it('answers supported questions from current records and declines advice requests', () => {
     const data = {
       ...emptyAppData(),
@@ -176,11 +126,26 @@ describe('rule-based analysis', () => {
     ).toMatchObject({
       supported: true,
       messageKey: 'chat.documentsAnswer',
-      values: { completed: 0, total: 5 },
+      values: { completed: 0, total: 2 },
     });
     expect(
       answerRecordedQuestion(data, '2026-10-21', 'Will I get a loan?')
         .supported,
     ).toBe(false);
+  });
+
+  it('answers the required weekly questions from the Monday-to-Sunday range', () => {
+    const data = {
+      ...emptyAppData(),
+      transactions: [
+        transaction({ id: 'week-income', type: 'income', amount: 80_000, date: '2026-10-19', categoryId: 'client-income' }),
+        transaction({ id: 'week-expense', type: 'expense', amount: 12_000, date: '2026-10-20', categoryId: 'transport' }),
+      ],
+      receivables: [{ id: 'week-receivable', amount: 30_000, currency: 'MMK' as const, date: '2026-10-18', counterparty: 'Customer', categoryId: 'sales', status: 'unpaid' as const, createdAt: '2026-10-18T00:00:00Z', updatedAt: '2026-10-18T00:00:00Z' }],
+    };
+    expect(answerRecordedQuestion(data, '2026-10-21', 'What is my income this week?')).toMatchObject({ messageKey: 'chat.weeklyIncomeAnswer', values: { amount: 80_000, startDate: '2026-10-19', endDate: '2026-10-25' } });
+    expect(answerRecordedQuestion(data, '2026-10-21', 'How much did I spend this week?')).toMatchObject({ messageKey: 'chat.weeklyExpensesAnswer', values: { amount: 12_000 } });
+    expect(answerRecordedQuestion(data, '2026-10-21', 'What is my highest expense category this week?')).toMatchObject({ messageKey: 'chat.weeklyCategoryAnswer', values: { category: 'transport', amount: 12_000 } });
+    expect(answerRecordedQuestion(data, '2026-10-21', 'How much do I have in outstanding receivables?')).toMatchObject({ messageKey: 'chat.receivablesAnswer', values: { amount: 30_000, count: 1 } });
   });
 });

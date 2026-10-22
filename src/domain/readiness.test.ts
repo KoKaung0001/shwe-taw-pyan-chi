@@ -10,15 +10,17 @@ describe('record readiness', () => {
   it('reports explicit record checks without assigning a score', () => {
     const checks = buildRecordChecks(emptyAppData());
     expect(checks.map(({ id, complete }) => [id, complete])).toEqual([
-      ['opening_balance', false],
       ['income_records', false],
       ['expense_records', false],
-      ['categorized_records', false],
+      ['receipt_evidence', false],
+      ['transaction_complete', false],
+      ['identity_document', false],
+      ['invoice_payment_evidence', false],
     ]);
   });
 
-  it('uses the existing document checklist keys', () => {
-    expect(readinessDocumentIds).toHaveLength(5);
+  it('tracks only the two user-reported document availability items', () => {
+    expect(readinessDocumentIds).toEqual(['identity_document', 'invoice_payment_evidence']);
   });
 });
 

@@ -1,38 +1,34 @@
 import {
-  Ellipsis,
   LayoutDashboard,
   ArrowLeftRight,
   ScanLine,
   Users,
   CalendarDays,
-  ChartNoAxesCombined,
   MessageCircle,
   ClipboardCheck,
   Settings,
 } from 'lucide-react';
 export const screens = [
-  { id: 'dashboard', path: '/', icon: LayoutDashboard },
+  { id: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
   { id: 'transactions', path: '/transactions', icon: ArrowLeftRight },
+  { id: 'add', path: '/add', icon: ScanLine },
+  { id: 'chat', path: '/chat', icon: MessageCircle },
+  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'capture', path: '/capture', icon: ScanLine },
   { id: 'owed', path: '/owed', icon: Users },
   { id: 'schedules', path: '/schedules', icon: CalendarDays },
-  { id: 'insights', path: '/insights', icon: ChartNoAxesCombined },
-  { id: 'chat', path: '/chat', icon: MessageCircle },
-  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'settings', path: '/settings', icon: Settings },
 ] as const;
 export type ScreenId = (typeof screens)[number]['id'];
 
 export const primaryDestinations = [
-  { id: 'dashboard', path: '/', icon: LayoutDashboard },
+  { id: 'dashboard', path: '/dashboard', icon: LayoutDashboard },
   { id: 'transactions', path: '/transactions', icon: ArrowLeftRight },
-  { id: 'payments', path: '/payments', icon: CalendarDays },
-  { id: 'insights', path: '/insights', icon: ChartNoAxesCombined },
-  { id: 'more', path: '/more', icon: Ellipsis },
+  { id: 'add', path: '/add', icon: ScanLine },
+  { id: 'chat', path: '/chat', icon: MessageCircle },
+  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
 ] as const;
 
 export const utilityDestinations = [
-  { id: 'chat', path: '/chat', icon: MessageCircle },
-  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'settings', path: '/settings', icon: Settings },
 ] as const;

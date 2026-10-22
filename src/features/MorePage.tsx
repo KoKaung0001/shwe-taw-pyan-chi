@@ -1,10 +1,8 @@
-import { ClipboardCheck, MessageCircle, Settings, ArrowRight } from 'lucide-react';
+import { Settings, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const items = [
-  { id: 'chat', path: '/chat', icon: MessageCircle },
-  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'settings', path: '/settings', icon: Settings },
 ] as const;
 

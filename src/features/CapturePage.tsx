@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategorySuggestion } from '../components/CategorySuggestion';
+import { DatePickerField } from '../components/DatePickerField';
 import type { Transaction } from '../domain/types';
 import { clockForTimeZone, systemClock } from '../services/clock';
-import { dateInTimeZone } from '../services/timeZone';
 import { useDemoStore } from '../store/demoStore';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -34,7 +33,7 @@ export function CapturePage() {
   const [dueDate, setDueDate] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
-  const [openingDayDisposition, setOpeningDayDisposition] = useState('');
+  const [reference, setReference] = useState('');
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -49,10 +48,6 @@ export function CapturePage() {
   const categories = data.categories.filter(
     (category) => category.type === type || category.type === 'both',
   );
-  const openingDay = data.openingBalance
-    ? dateInTimeZone(data.openingBalance.referenceAt, data.openingBalance.timeZone)
-    : '';
-  const showOpeningChoice = Boolean(data.openingBalance && date === openingDay);
 
   function selectFile(candidate: File | undefined) {
     setError('');
@@ -91,7 +86,6 @@ export function CapturePage() {
     setDueDate('');
     setCategoryId('');
     setDescription(t('capture.sampleDescription'));
-    setOpeningDayDisposition('');
     setReviewed(false);
     setError('');
     setSaved(false);
@@ -106,7 +100,6 @@ export function CapturePage() {
     setDueDate('');
     setCategoryId('');
     setDescription('');
-    setOpeningDayDisposition('');
     setReviewed(false);
     setError('');
     setSaved(false);
@@ -116,10 +109,6 @@ export function CapturePage() {
     event.preventDefault();
     setError('');
     setSaved(false);
-    if (!data.openingBalance) {
-      setError(t('transactions.openingRequired'));
-      return;
-    }
     if (!extraction) {
       setError(t('capture.chooseReviewMode'));
       return;
@@ -140,10 +129,6 @@ export function CapturePage() {
       setError(t('transactions.dueDateError'));
       return;
     }
-    if (showOpeningChoice && !openingDayDisposition) {
-      setError(t('transactions.openingDayError'));
-      return;
-    }
     if (!reviewed) {
       setError(t('capture.reviewRequired'));
       return;
@@ -157,14 +142,9 @@ export function CapturePage() {
       currency: 'MMK',
       date,
       ...(cashStatus === 'pending' ? { dueDate } : {}),
-      ...(openingDayDisposition
-        ? {
-            openingDayDisposition: openingDayDisposition as
-              'already_in_opening' | 'after_reference',
-          }
-        : {}),
       categoryId: categoryId || null,
       description: description.trim() || undefined,
+      reference: reference.trim() || undefined,
       counterpartyId: null,
       cashStatus,
       confirmationStatus: 'not_applicable',
@@ -185,7 +165,7 @@ export function CapturePage() {
     setDueDate('');
     setCategoryId('');
     setDescription('');
-    setOpeningDayDisposition('');
+    setReference('');
     setReviewed(false);
     setSaved(true);
   }
@@ -196,14 +176,6 @@ export function CapturePage() {
         <h1 tabIndex={-1}>{t('capture.title')}</h1>
       </header>
 
-      {!data.openingBalance ? (
-        <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
-          {t('transactions.openingRequired')}{' '}
-          <Link className="font-semibold underline" to="/settings">
-            {t('settings.nav')}
-          </Link>
-        </p>
-      ) : null}
 
       <section className="rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
         <h2 className="text-xl font-semibold">{t('capture.uploadTitle')}</h2>
@@ -268,10 +240,12 @@ export function CapturePage() {
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.type')}
               <select
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+                className="app-select"
                 value={type}
                 onChange={(event) => {
-                  setType(event.target.value as 'income' | 'expense');
+                  const nextType = event.target.value as 'income' | 'expense';
+                  setType(nextType);
+                  if (nextType === 'income') { setCashStatus('settled'); setDueDate(''); }
                   setCategoryId('');
                   setReviewed(false);
                 }}
@@ -295,23 +269,19 @@ export function CapturePage() {
                 required
               />
             </label>
-            <label className="grid gap-2 text-sm font-medium">
-              {t('transaction.date')}
-              <input
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-                type="date"
-                value={date}
-                onChange={(event) => {
-                  setDate(event.target.value);
-                  setReviewed(false);
-                }}
-                required
-              />
-            </label>
+            <DatePickerField
+              id="capture-date"
+              label={t('transaction.date')}
+              fieldClassName="grid gap-2 text-sm font-medium"
+              inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+              value={date}
+              onChange={(value) => { setDate(value); setReviewed(false); }}
+              required
+            />
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.status')}
               <select
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+                className="app-select"
                 value={cashStatus}
                 onChange={(event) => {
                   setCashStatus(event.target.value as 'settled' | 'pending');
@@ -319,30 +289,27 @@ export function CapturePage() {
                 }}
               >
                 <option value="settled">{t('transaction.settled')}</option>
-                <option value="pending">{t('transaction.pending')}</option>
+                {type === 'expense' ? <option value="pending">{t('transaction.pending')}</option> : null}
               </select>
             </label>
             {cashStatus === 'pending' ? (
-              <label className="grid gap-2 text-sm font-medium">
-                {t('transaction.dueDate')}
-                <input
-                  className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-                  type="date"
-                  min={date}
-                  value={dueDate}
-                  onChange={(event) => {
-                    setDueDate(event.target.value);
-                    setReviewed(false);
-                  }}
-                  required
-                />
-              </label>
+              <DatePickerField
+                id="capture-due-date"
+                label={t('transaction.dueDate')}
+                fieldClassName="grid gap-2 text-sm font-medium"
+                inputClassName="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+                min={date}
+                value={dueDate}
+                onChange={(value) => { setDueDate(value); setReviewed(false); }}
+                required
+              />
             ) : null}
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.category')}
               <select
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+                className="app-select"
                 value={categoryId}
+                required
                 onChange={(event) => {
                   setCategoryId(event.target.value);
                   setReviewed(false);
@@ -380,47 +347,17 @@ export function CapturePage() {
                 }}
               />
             </label>
-            {showOpeningChoice ? (
-              <fieldset className="grid gap-2 sm:col-span-2">
-                <legend className="text-sm font-semibold">
-                  {t('transactions.openingDayPrompt')}
-                </legend>
-                <label className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="radio"
-                    name="capture-opening-day"
-                    value="already_in_opening"
-                    checked={openingDayDisposition === 'already_in_opening'}
-                    onChange={(event) => {
-                      setOpeningDayDisposition(event.target.value);
-                      setReviewed(false);
-                    }}
-                  />
-                  {t('transactions.alreadyIncluded')}
-                </label>
-                <label className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="radio"
-                    name="capture-opening-day"
-                    value="after_reference"
-                    checked={openingDayDisposition === 'after_reference'}
-                    onChange={(event) => {
-                      setOpeningDayDisposition(event.target.value);
-                      setReviewed(false);
-                    }}
-                  />
-                  {t('transactions.afterReference')}
-                </label>
-              </fieldset>
-            ) : null}
-            <label className="flex min-h-11 items-start gap-3 sm:col-span-2">
+            <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+              {t('capture.reference', { defaultValue: 'Transaction reference (optional)' })}
+              <input className="min-h-12 rounded-xl border border-[#bccbc0] px-4" maxLength={120} value={reference} onChange={(event) => { setReference(event.target.value); setReviewed(false); }} />
+            </label>
+            <label className="flex min-h-11 items-center gap-2 sm:col-span-2">
               <input
-                className="mt-1 size-4"
                 type="checkbox"
                 checked={reviewed}
-                onChange={(event) => setReviewed(event.target.checked)}
+                onChange={(event) => setReviewed(event.currentTarget.checked)}
               />
-              <span>{t('capture.confirmReview')}</span>
+              {t('capture.reviewConfirm', { defaultValue: 'I reviewed and confirm these transaction fields.' })}
             </label>
             {error ? (
               <p className="text-sm text-red-800 sm:col-span-2" role="alert">
@@ -429,7 +366,6 @@ export function CapturePage() {
             ) : null}
             <div className="sm:col-span-2">
               <button
-                disabled={!data.openingBalance}
                 className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white disabled:opacity-50"
               >
                 {t('capture.saveReviewed')}

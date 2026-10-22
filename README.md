@@ -1,6 +1,6 @@
 # FinTech Companion
 
-A frontend prototype for everyday financial records in Myanmar. M7 adds record-completeness checks, a user-controlled supporting-document checklist and optional keyword category suggestions. This describes record completeness only, not creditworthiness or loan approval. M8 completes browser acceptance coverage, security policy checks and a synthetic-data demo guide. Earlier milestones provide period reports, evidence-based insights, duplicate review, grounded chat, local receipt/screenshot review, manual records, and one-time/monthly schedules. Images stay in the browser tab and are discarded after review; no OCR service is used. Future schedule items remain forecast-only, and unpaid items stay unpaid across reloads. Records stay in validated, versioned browser storage. Never enter real financial information.
+A frontend prototype for everyday financial records in Myanmar. It starts with synthetic MMK sample activity and an unpaid receivable, then persists edits in validated browser storage. Users can create and edit transactions, track explicit receivables, review simulated receipt extraction, ask deterministic questions, and check record completeness. Images stay in the browser tab and are discarded after review; no OCR service is used. Forecasting and scheduled payments remain secondary tools. Never enter real financial information.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-CI runs these checks, audits high-severity dependency advisories and runs a separate Chromium navigation/responsiveness job. Tests cover the shell, direct links, unknown routes, mobile menu, banner, overflow at 360/768/1280 px, opening balance and manual transaction entry, one-time/monthly schedule lifecycles, receipt review, readiness, malformed-storage recovery and safe rendering of user text. The CSP check verifies the production HTML policy is stricter than the development policy.
+CI runs these checks, audits high-severity dependency advisories and runs a separate Chromium navigation/responsiveness job. Tests cover the five destinations, overflow at 360/768/1280 px, weekly dashboard totals, transaction create/edit/filter/persistence, receivable settlement idempotency, receipt review and confirmation, assistant questions, readiness choices, reset confirmation, malformed-storage recovery and safe text rendering. The CSP check verifies the production HTML policy is stricter than the development policy.
 
 The reviewer-ready acceptance cases for completed milestones are in [TEST_CASES.md](docs/TEST_CASES.md), including manual setup/steps, expected outcomes, automated coverage and current gaps. A short synthetic-data walkthrough is in [DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
 
@@ -34,7 +34,7 @@ The reviewer-ready acceptance cases for completed milestones are in [TEST_CASES.
 
 `src/app` composes routing and layout; `src/components` shared UI; `src/features` financial screens and remaining placeholders; `src/store` validated Zustand persistence; `src/domain` Zod data contracts and pure balance and schedule lifecycle logic; `src/services` injected clock; `src/i18n` English and Burmese skeleton; `e2e` browser checks. React 18, TypeScript, Vite, Tailwind, React Router, lucide-react, react-i18next, Zustand and Zod power the prototype.
 
-The navigation covers dashboard, transactions, upload/review, owed payments, schedules, forecast/insights, assistant, readiness and settings. The dashboard and settings support the opening balance; transactions supports manual records, optional category suggestions and linked correction workflows; upload/review validates local image files, offers optional category suggestions and saves only user-confirmed fields; schedules supports one-time and monthly payments and the shared occurrence lifecycle; owed payments separates receivables and payables; forecast/insights shows projections, rule-based signals and duplicate review; the assistant answers a bounded set of questions from records; readiness shows record checks and a user-maintained document checklist without uploading documents or assessing creditworthiness. Mobile uses an expandable menu. No seeded financial figures or live connections appear.
+The five primary destinations are Home, Transactions, Add, AI Assistant and Credit Readiness. Add offers manual entry, simulated upload and explicit receivable creation. Receivables stay separate from income until a user marks them paid; settlement creates one linked income record. Settings remains secondary and includes a confirmed demo-data reset. Insights and payment schedules remain accessible as secondary tools. The assistant answers a bounded set of questions from current browser records; readiness checks completeness only and does not upload documents or assess creditworthiness. Mobile uses a five-item bottom navigation bar. No live financial or AI connections are used.
 
 ## Product behavior and next work
 

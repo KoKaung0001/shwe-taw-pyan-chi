@@ -23,6 +23,17 @@ export const openingBalanceSchema = z.object({
 });
 export type OpeningBalance = z.infer<typeof openingBalanceSchema>;
 
+export const balanceAdjustmentSchema = z.object({
+  id: idSchema,
+  amount: z.number().int().min(-MMK_MAX).max(MMK_MAX).refine((value) => value !== 0),
+  currency: z.literal('MMK'),
+  date: isoDateSchema,
+  occurredAt: isoInstantSchema,
+  description: z.string().trim().min(1).max(120),
+  createdAt: isoInstantSchema,
+});
+export type BalanceAdjustment = z.infer<typeof balanceAdjustmentSchema>;
+
 export const transactionSchema = z
   .object({
     id: idSchema,
@@ -39,6 +50,7 @@ export const transactionSchema = z
       .optional(),
     categoryId: idSchema.nullable(),
     description: z.string().max(200).optional(),
+    reference: z.string().max(120).optional(),
     counterpartyId: idSchema.nullable(),
     cashStatus: z.enum(['settled', 'pending']),
     confirmationStatus: z.enum(['not_applicable', 'unconfirmed', 'confirmed']),
@@ -101,6 +113,26 @@ export const transactionSchema = z
     }
   });
 export type Transaction = z.infer<typeof transactionSchema>;
+
+export const receivableSchema = z.object({
+  id: idSchema,
+  amount: moneySchema,
+  currency: z.literal('MMK'),
+  date: isoDateSchema,
+  counterparty: z.string().trim().min(1).max(120),
+  description: z.string().max(200).optional(),
+  categoryId: idSchema.nullable(),
+  status: z.enum(['unpaid', 'paid']),
+  settledAt: isoInstantSchema.optional(),
+  linkedIncomeTransactionId: idSchema.optional(),
+  createdAt: isoInstantSchema,
+  updatedAt: isoInstantSchema,
+}).superRefine((receivable, context) => {
+  if (receivable.status === 'paid' && !receivable.settledAt) {
+    context.addIssue({ code: 'custom', path: ['settledAt'], message: 'Paid receivables need a settlement time.' });
+  }
+});
+export type Receivable = z.infer<typeof receivableSchema>;
 
 export const counterpartySchema = z.object({
   id: idSchema,
@@ -215,7 +247,9 @@ export type DuplicateReview = z.infer<typeof duplicateReviewSchema>;
 
 const appDataShape = z.object({
   openingBalance: openingBalanceSchema.nullable(),
+  balanceAdjustments: z.array(balanceAdjustmentSchema).max(50_000).default([]),
   transactions: z.array(transactionSchema).max(50_000),
+  receivables: z.array(receivableSchema).max(50_000).default([]),
   counterparties: z.array(counterpartySchema).max(10_000),
   categories: z.array(categorySchema).max(500),
   scheduleRules: z.array(scheduledRuleSchema).max(10_000),
@@ -237,6 +271,8 @@ export const appDataSchema = appDataShape.superRefine((data, context) => {
     });
   };
   unique(data.transactions, 'transactions');
+  unique(data.balanceAdjustments, 'balanceAdjustments');
+  unique(data.receivables, 'receivables');
   unique(data.counterparties, 'counterparties');
   unique(data.categories, 'categories');
   unique(data.scheduleRules, 'scheduleRules');
@@ -251,6 +287,21 @@ export const appDataSchema = appDataShape.superRefine((data, context) => {
   );
   const rules = new Map(data.scheduleRules.map((rule) => [rule.id, rule]));
   const linkedPaymentIds = new Set<string>();
+
+  data.receivables.forEach((receivable, index) => {
+    if (receivable.categoryId && !data.categories.some((category) => category.id === receivable.categoryId)) {
+      context.addIssue({ code: 'custom', path: ['receivables', index, 'categoryId'], message: 'Receivable category must exist.' });
+    }
+    const linked = receivable.linkedIncomeTransactionId
+      ? transactions.get(receivable.linkedIncomeTransactionId)
+      : undefined;
+    if (receivable.linkedIncomeTransactionId && (!linked || linked.type !== 'income')) {
+      context.addIssue({ code: 'custom', path: ['receivables', index, 'linkedIncomeTransactionId'], message: 'Settlement must reference an income transaction.' });
+    }
+    if (receivable.status === 'unpaid' && receivable.linkedIncomeTransactionId) {
+      context.addIssue({ code: 'custom', path: ['receivables', index, 'linkedIncomeTransactionId'], message: 'Unpaid receivables cannot have settlement income.' });
+    }
+  });
 
   data.paymentOccurrences.forEach((occurrence, index) => {
     const rule = rules.get(occurrence.ruleId);
@@ -452,7 +503,9 @@ export type PersistedStore = z.infer<typeof persistedStoreSchema>;
 
 export const emptyAppData = (): AppData => ({
   openingBalance: null,
+  balanceAdjustments: [],
   transactions: [],
+  receivables: [],
   counterparties: [],
   categories: [
     { id: 'client-income', name: 'Client income', type: 'income' },

@@ -30,16 +30,72 @@ const exampleData = (): AppData => ({
 });
 
 describe('versioned demo persistence', () => {
+  it('isolates account workspaces and leaves the legacy shared workspace untouched', async () => {
+    const { storage, values } = memoryStorage();
+    const legacy = JSON.stringify({ version: PERSISTENCE_VERSION, state: { oldSharedRecords: true } });
+    values.set(STORAGE_KEY, legacy);
+    const accountKey = `${STORAGE_KEY}:account:${encodeURIComponent('one@example.com')}`;
+    values.set(accountKey, JSON.stringify({ version: PERSISTENCE_VERSION, state: { data: exampleData(), storageNotice: null, timeZone: 'Asia/Rangoon' } }));
+    const store = createDemoStore(storage, { skipHydration: true });
+    await store.getState().activateWorkspace('One@Example.com');
+    expect(store.getState().data.openingBalance?.amount).toBe(125_000);
+    expect(store.getState().data.transactions).toHaveLength(21);
+    await store.getState().activateWorkspace('two@example.com');
+    expect(store.getState().data.openingBalance).toBeNull();
+    expect(store.getState().data.transactions).toHaveLength(21);
+    await store.getState().activateWorkspace('two@example.com');
+    expect(store.getState().data.transactions).toHaveLength(21);
+    expect(values.get(STORAGE_KEY)).toBe(legacy);
+    expect([...values.keys()].filter((key) => key.startsWith(`${STORAGE_KEY}:account:`))).toHaveLength(2);
+  });
+  it('preserves legacy opening balance, adjustments and transaction classifications while ignoring them in new flows', async () => {
+    const { storage } = memoryStorage();
+    const legacyData: AppData = {
+      ...exampleData(),
+      balanceAdjustments: [{ id: 'adjustment-1', amount: -5_000, currency: 'MMK', date: '2026-10-21', occurredAt: '2026-10-21T01:00:00Z', description: 'Legacy adjustment', createdAt: '2026-10-21T01:00:00Z' }],
+      transactions: [{ id: 'old', type: 'income', amount: 10_000, currency: 'MMK', date: '2026-10-21', categoryId: null, counterpartyId: null, cashStatus: 'settled', confirmationStatus: 'not_applicable', openingDayDisposition: 'already_in_opening', source: 'manual', ocrReviewStatus: 'not_applicable', createdAt: '2026-10-21T00:00:00Z', updatedAt: '2026-10-21T00:00:00Z' }],
+    };
+    const store = createDemoStore(storage, { skipHydration: true });
+    await store.persist.rehydrate();
+    store.getState().replaceData(legacyData);
+    store.getState().setTimeZone('America/New_York');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const restored = createDemoStore(storage, { skipHydration: true });
+    await restored.persist.rehydrate();
+    expect(restored.getState().data.openingBalance).toEqual(legacyData.openingBalance);
+    expect(restored.getState().data.balanceAdjustments).toEqual(legacyData.balanceAdjustments);
+    expect(restored.getState().data.transactions[0].openingDayDisposition).toBe('already_in_opening');
+  });
+  it('refreshes the example transactions without overwriting the user-entered opening balance', () => {
+    const store = createDemoStore(memoryStorage().storage, { skipHydration: true });
+    store.getState().replaceData(exampleData());
+    store.getState().resetDemoData();
+    expect(store.getState().data.openingBalance).toEqual(exampleData().openingBalance);
+    expect(store.getState().data.transactions).toHaveLength(21);
+    expect(store.getState().data.balanceAdjustments).toHaveLength(0);
+  });
+
+  it('settles each explicit receivable into exactly one linked income record', () => {
+    const store = createDemoStore(memoryStorage().storage, { skipHydration: true });
+    const now = '2026-10-21T08:00:00Z';
+    store.getState().createReceivable({ id: 'receivable-1', amount: 42_000, currency: 'MMK', date: '2026-10-20', counterparty: 'Customer', description: 'Order', categoryId: 'sales', status: 'unpaid', createdAt: now, updatedAt: now });
+    store.getState().settleReceivable('receivable-1');
+    store.getState().settleReceivable('receivable-1');
+    const data = store.getState().data;
+    expect(data.receivables[0]).toMatchObject({ status: 'paid', linkedIncomeTransactionId: expect.any(String) });
+    expect(data.transactions.filter((item) => item.type === 'income' && item.amount === 42_000)).toHaveLength(1);
+  });
+
   it('persists readiness document availability as checklist state', async () => {
     const { storage } = memoryStorage();
     const store = createDemoStore(storage, { skipHydration: true });
     await store.persist.rehydrate();
-    store.getState().setReadinessDocument('income_records', true);
-    expect(store.getState().data.checklist.income_records).toBe(true);
+    store.getState().setReadinessDocument('identity_document', true);
+    expect(store.getState().data.checklist.identity_document).toBe(true);
 
     const restored = createDemoStore(storage, { skipHydration: true });
     await restored.persist.rehydrate();
-    expect(restored.getState().data.checklist.income_records).toBe(true);
+    expect(restored.getState().data.checklist.identity_document).toBe(true);
   });
 
   it('starts with an empty workspace without reporting corrupt saved data', async () => {
@@ -209,11 +265,6 @@ describe('versioned demo persistence', () => {
   it('saves a manual transaction, corrects the same ID, then supports delete and undo', () => {
     const store = createDemoStore(memoryStorage().storage, {
       skipHydration: true,
-    });
-    store.getState().setOpeningBalance({
-      amount: 100_000,
-      referenceAt: '2026-10-21T08:00:00+06:30',
-      timeZone: 'Asia/Rangoon',
     });
     const record = {
       id: 'manual-1',

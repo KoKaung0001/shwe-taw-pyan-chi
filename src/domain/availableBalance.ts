@@ -1,8 +1,9 @@
-import type { OpeningBalance, Transaction } from './types';
+import type { BalanceAdjustment, OpeningBalance, Transaction } from './types';
 
 export interface AvailableBalanceResult {
   amount: number | null;
   includedTransactionIds: string[];
+  includedAdjustmentIds: string[];
   excludedAlreadyIncludedIds: string[];
   unclassifiedOpeningDayIds: string[];
 }
@@ -23,11 +24,13 @@ function businessDate(instant: string, timeZone: string): string {
 export function calculateRecordedAvailableBalance(
   opening: OpeningBalance | null,
   transactions: readonly Transaction[],
+  adjustments: readonly BalanceAdjustment[] = [],
 ): AvailableBalanceResult {
   if (!opening)
     return {
       amount: null,
       includedTransactionIds: [],
+      includedAdjustmentIds: [],
       excludedAlreadyIncludedIds: [],
       unclassifiedOpeningDayIds: [],
     };
@@ -35,6 +38,7 @@ export function calculateRecordedAvailableBalance(
   const openingDay = businessDate(opening.referenceAt, opening.timeZone);
   let amount = opening.amount;
   const includedTransactionIds: string[] = [];
+  const includedAdjustmentIds: string[] = [];
   const excludedAlreadyIncludedIds: string[] = [];
   const unclassifiedOpeningDayIds: string[] = [];
 
@@ -64,15 +68,27 @@ export function calculateRecordedAvailableBalance(
       excludedAlreadyIncludedIds.push(transaction.id);
       continue;
     }
-    amount +=
-      transaction.type === 'income' ? transaction.amount : -transaction.amount;
+    amount = checkedAmount(amount +
+      (transaction.type === 'income' ? transaction.amount : -transaction.amount));
     includedTransactionIds.push(transaction.id);
+  }
+
+  for (const adjustment of adjustments) {
+    if (new Date(adjustment.occurredAt).getTime() <= new Date(opening.referenceAt).getTime()) continue;
+    amount = checkedAmount(amount + adjustment.amount);
+    includedAdjustmentIds.push(adjustment.id);
   }
 
   return {
     amount,
     includedTransactionIds,
+    includedAdjustmentIds,
     excludedAlreadyIncludedIds,
     unclassifiedOpeningDayIds,
   };
+}
+
+function checkedAmount(amount: number) {
+  if (!Number.isSafeInteger(amount)) throw new RangeError('Calculated balance exceeds the supported MMK range.');
+  return amount;
 }

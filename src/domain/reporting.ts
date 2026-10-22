@@ -1,12 +1,10 @@
 import {
   appDataSchema,
   type AppData,
-  type ScheduledRule,
   type Transaction,
 } from './types';
-import { calculateRecordedAvailableBalance } from './availableBalance';
 
-export type ReportingPeriod = 'this_month' | 'last_month' | 'last_30_days';
+export type ReportingPeriod = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30_days';
 
 export interface DateRange {
   startDate: string;
@@ -18,6 +16,24 @@ export interface PeriodSummary extends DateRange {
   expenses: number;
   net: number;
   transactionCount: number;
+}
+
+export interface DailyMovement {
+  date: string;
+  income: number;
+  expenses: number;
+}
+
+export interface FinancialChartDay extends DailyMovement {
+  dailyNetChange: number;
+  cumulativeNetChange: number;
+}
+
+export interface FinancialChartSeries extends DateRange {
+  days: FinancialChartDay[];
+  income: number;
+  expenses: number;
+  netChange: number;
 }
 
 export interface MonthlyMovement {
@@ -40,28 +56,6 @@ export interface OutstandingSummary {
   unconfirmedPaidCount: number;
 }
 
-export interface ForecastDay {
-  date: string;
-  income: number;
-  expenses: number;
-  closingBalance: number | null;
-}
-
-export interface ForecastProjection {
-  days: ForecastDay[];
-  minimumBalance: number | null;
-  minimumBalanceDate: string | null;
-  shortfall: number;
-}
-
-export interface CashFlowForecast {
-  startDate: string;
-  endDate: string;
-  startingBalance: number | null;
-  base: ForecastProjection;
-  lateInflows: ForecastProjection;
-}
-
 export function addCalendarDays(date: string, days: number): string {
   const result = new Date(`${date}T00:00:00.000Z`);
   result.setUTCDate(result.getUTCDate() + days);
@@ -82,6 +76,12 @@ export function getReportingRange(
   period: ReportingPeriod,
   today: string,
 ): DateRange {
+  if (period === 'this_week' || period === 'last_week') {
+    const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
+    const monday = addCalendarDays(today, -((weekday + 6) % 7));
+    const startDate = period === 'last_week' ? addCalendarDays(monday, -7) : monday;
+    return { startDate, endDate: addCalendarDays(startDate, 6) };
+  }
   if (period === 'last_30_days')
     return { startDate: addCalendarDays(today, -29), endDate: today };
   if (period === 'last_month') {
@@ -113,6 +113,56 @@ export function summarizePeriod(
     expenses,
     net: income - expenses,
     transactionCount: included.length,
+  };
+}
+
+export function summarizeDailyMovement(
+  transactions: readonly Transaction[],
+  range: DateRange,
+): DailyMovement[] {
+  const byDate = new Map<string, DailyMovement>();
+  for (let date = range.startDate; date <= range.endDate; date = addCalendarDays(date, 1)) {
+    byDate.set(date, { date, income: 0, expenses: 0 });
+  }
+
+  for (const transaction of transactions) {
+    if (
+      transaction.cashStatus !== 'settled' ||
+      transaction.date < range.startDate ||
+      transaction.date > range.endDate
+    ) continue;
+    const daily = byDate.get(transaction.date);
+    if (!daily) continue;
+    daily[transaction.type === 'income' ? 'income' : 'expenses'] += transaction.amount;
+  }
+
+  return [...byDate.values()];
+}
+
+/** Builds actual daily cash movements and period-relative net change. */
+export function buildFinancialChartSeries(
+  transactions: readonly Transaction[],
+  range: DateRange,
+): FinancialChartSeries {
+  const movements = summarizeDailyMovement(transactions, range);
+  const totals = movements.reduce(
+    (sum, day) => ({ income: sum.income + day.income, expenses: sum.expenses + day.expenses }),
+    { income: 0, expenses: 0 },
+  );
+
+  let cumulativeNetChange = 0;
+  const days = movements.map((day) => {
+    const dailyNetChange = day.income - day.expenses;
+    cumulativeNetChange += dailyNetChange;
+    return { ...day, dailyNetChange, cumulativeNetChange };
+  });
+
+  return {
+    ...range,
+    days,
+    income: totals.income,
+    expenses: totals.expenses,
+    netChange: totals.income - totals.expenses,
   };
 }
 
@@ -156,7 +206,7 @@ export function summarizeOutstanding(
       dueDate: transaction.dueDate,
       overdue: transaction.dueDate < today,
     };
-    (transaction.type === 'income' ? receivables : payables).push(item);
+    if (transaction.type === 'expense') payables.push(item);
   }
   const byDueDate = (a: OutstandingItem, b: OutstandingItem) =>
     a.dueDate.localeCompare(b.dueDate);
@@ -165,10 +215,7 @@ export function summarizeOutstanding(
   return {
     receivables,
     payables,
-    receivableTotal: receivables.reduce(
-      (sum, item) => sum + item.transaction.amount,
-      0,
-    ),
+    receivableTotal: sumOutstandingReceivables(data),
     payableTotal: payables.reduce(
       (sum, item) => sum + item.transaction.amount,
       0,
@@ -179,112 +226,6 @@ export function summarizeOutstanding(
   };
 }
 
-interface ForecastEvent {
-  id: string;
-  date: string;
-  type: 'income' | 'expense';
-  amount: number;
-}
-
-function buildProjection(
-  events: readonly ForecastEvent[],
-  startDate: string,
-  horizonDays: number,
-  startingBalance: number | null,
-  shiftInflows: boolean,
-): ForecastProjection {
-  const byDate = new Map<string, { income: number; expenses: number }>();
-  const endDate = addCalendarDays(startDate, horizonDays - 1);
-  for (const event of events) {
-    const projectedDate =
-      shiftInflows && event.type === 'income'
-        ? addCalendarDays(event.date, 7)
-        : event.date;
-    if (projectedDate < startDate || projectedDate > endDate) continue;
-    const values = byDate.get(projectedDate) ?? { income: 0, expenses: 0 };
-    values[event.type === 'income' ? 'income' : 'expenses'] += event.amount;
-    byDate.set(projectedDate, values);
-  }
-
-  let balance = startingBalance;
-  const days: ForecastDay[] = [];
-  for (let offset = 0; offset < horizonDays; offset += 1) {
-    const date = addCalendarDays(startDate, offset);
-    const values = byDate.get(date) ?? { income: 0, expenses: 0 };
-    if (balance !== null) balance += values.income - values.expenses;
-    days.push({ date, ...values, closingBalance: balance });
-  }
-  const knownBalances = days.filter(
-    (day): day is ForecastDay & { closingBalance: number } =>
-      day.closingBalance !== null,
-  );
-  const lowDay = knownBalances.reduce<ForecastDay | null>(
-    (lowest, day) =>
-      lowest === null || day.closingBalance! < lowest.closingBalance!
-        ? day
-        : lowest,
-    null,
-  );
-  const minimumBalance = lowDay?.closingBalance ?? null;
-  return {
-    days,
-    minimumBalance,
-    minimumBalanceDate: lowDay?.date ?? null,
-    shortfall: minimumBalance === null ? 0 : Math.max(0, -minimumBalance),
-  };
-}
-
-function scheduledRuleFor(
-  rules: readonly ScheduledRule[],
-  ruleId: string,
-): ScheduledRule | undefined {
-  return rules.find((rule) => rule.id === ruleId);
-}
-
-/** Projects pending obligations and forecast-only occurrences without counting recorded payments twice. */
-export function buildCashFlowForecast(
-  input: AppData,
-  today: string,
-  horizonDays = 14,
-): CashFlowForecast {
-  const data = appDataSchema.parse(input);
-  const events: ForecastEvent[] = [];
-  for (const transaction of data.transactions) {
-    if (transaction.cashStatus !== 'pending' || !transaction.dueDate) continue;
-    events.push({
-      id: `transaction:${transaction.id}`,
-      date: transaction.dueDate < today ? today : transaction.dueDate,
-      type: transaction.type,
-      amount: transaction.amount,
-    });
-  }
-  for (const occurrence of data.paymentOccurrences) {
-    if (occurrence.status !== 'scheduled') continue;
-    const rule = scheduledRuleFor(data.scheduleRules, occurrence.ruleId);
-    if (!rule?.active) continue;
-    events.push({
-      id: `occurrence:${occurrence.id}`,
-      date:
-        occurrence.originalDueDate < today ? today : occurrence.originalDueDate,
-      type: rule.type,
-      amount: rule.amount,
-    });
-  }
-  const startingBalance = calculateRecordedAvailableBalance(
-    data.openingBalance,
-    data.transactions,
-  ).amount;
-  return {
-    startDate: today,
-    endDate: addCalendarDays(today, horizonDays - 1),
-    startingBalance,
-    base: buildProjection(events, today, horizonDays, startingBalance, false),
-    lateInflows: buildProjection(
-      events,
-      today,
-      horizonDays,
-      startingBalance,
-      true,
-    ),
-  };
+export function sumOutstandingReceivables(data: Pick<AppData, 'receivables'>): number {
+  return data.receivables.filter((item) => item.status === 'unpaid').reduce((sum, item) => sum + item.amount, 0);
 }

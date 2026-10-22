@@ -1,27 +1,25 @@
 import type { AppData } from './types';
 
 export const readinessDocumentIds = [
-  'income_records',
-  'expense_receipts',
-  'account_statements',
-  'business_registration',
   'identity_document',
+  'invoice_payment_evidence',
 ] as const;
 
 export type ReadinessDocumentId = (typeof readinessDocumentIds)[number];
 
 export type RecordCheckId =
-  | 'opening_balance'
   | 'income_records'
   | 'expense_records'
-  | 'categorized_records';
+  | 'receipt_evidence'
+  | 'transaction_complete'
+  | 'identity_document'
+  | 'invoice_payment_evidence';
 
 export function buildRecordChecks(data: AppData) {
   const categorizedCount = data.transactions.filter(
     (transaction) => transaction.categoryId !== null,
   ).length;
   return [
-    { id: 'opening_balance' as const, complete: data.openingBalance !== null },
     {
       id: 'income_records' as const,
       complete: data.transactions.some(
@@ -35,15 +33,21 @@ export function buildRecordChecks(data: AppData) {
       ),
     },
     {
-      id: 'categorized_records' as const,
+      id: 'receipt_evidence' as const,
+      complete: data.transactions.some((transaction) => transaction.source === 'receipt_image' || transaction.source === 'screenshot'),
+    },
+    {
+      id: 'transaction_complete' as const,
       complete:
         data.transactions.length > 0 &&
-        categorizedCount === data.transactions.length,
+        data.transactions.every((transaction) => Boolean(transaction.categoryId || transaction.description?.trim())),
       values: {
         categorized: categorizedCount,
         total: data.transactions.length,
       },
     },
+    { id: 'identity_document' as const, complete: Boolean(data.checklist.identity_document) },
+    { id: 'invoice_payment_evidence' as const, complete: Boolean(data.checklist.invoice_payment_evidence) },
   ];
 }
 

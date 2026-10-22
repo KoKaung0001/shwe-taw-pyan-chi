@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateRecordedAvailableBalance } from './availableBalance';
 import { fixedClock } from '../services/clock';
-import type { OpeningBalance, Transaction } from './types';
+import type { BalanceAdjustment, OpeningBalance, Transaction } from './types';
 
 const opening: OpeningBalance = {
   amount: 470_000,
@@ -27,6 +27,28 @@ const transaction = (
 });
 
 describe('recorded available balance reference point', () => {
+  it('applies signed balance adjustments after the opening time and keeps pending entries out', () => {
+    const adjustment = (overrides: Partial<BalanceAdjustment> & Pick<BalanceAdjustment, 'id'>): BalanceAdjustment => ({
+      amount: -10_000,
+      currency: 'MMK',
+      date: '2026-10-22',
+      occurredAt: '2026-10-22T08:00:00Z',
+      description: 'Reconciliation',
+      createdAt: '2026-10-22T08:00:00Z',
+      ...overrides,
+    });
+    const result = calculateRecordedAvailableBalance(opening, [
+      transaction({ id: 'salary', amount: 100_000 }),
+      transaction({ id: 'pending-expense', type: 'expense', amount: 900_000, cashStatus: 'pending', dueDate: '2026-10-22' }),
+    ], [
+      adjustment({ id: 'reconcile-down' }),
+      adjustment({ id: 'same-as-opening', amount: 500_000, occurredAt: opening.referenceAt }),
+      adjustment({ id: 'reconcile-up', amount: 5_000, occurredAt: '2026-10-22T09:00:00Z' }),
+    ]);
+    expect(result.amount).toBe(565_000);
+    expect(result.includedAdjustmentIds).toEqual(['reconcile-down', 'reconcile-up']);
+  });
+
   it('adds only settled movements after the opening reference', () => {
     const result = calculateRecordedAvailableBalance(opening, [
       transaction({
@@ -86,6 +108,7 @@ describe('recorded available balance reference point', () => {
     ).toEqual({
       amount: null,
       includedTransactionIds: [],
+      includedAdjustmentIds: [],
       excludedAlreadyIncludedIds: [],
       unclassifiedOpeningDayIds: [],
     });

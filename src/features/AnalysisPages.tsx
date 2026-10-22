@@ -1,21 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { SendHorizontal } from 'lucide-react';
-import {
-  answerRecordedQuestion,
-  buildRuleInsights,
-  duplicateReviewId,
-  findPossibleDuplicates,
-} from '../domain/analysis';
-import {
-  buildCashFlowForecast,
-  summarizeOutstanding,
-} from '../domain/reporting';
-import { clockForTimeZone, systemClock } from '../services/clock';
+import { answerRecordedQuestion } from '../domain/analysis';
+import { summarizeOutstanding } from '../domain/reporting';
+import { clockForTimeZone } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
-import type { DuplicateReview } from '../domain/types';
 
 const money = (amount: number | null) =>
   amount === null
@@ -169,344 +160,31 @@ function OutstandingList({
   );
 }
 
-export function ForecastPage() {
-  const { t } = useTranslation();
-  const data = useDemoStore((state) => state.data);
-  const timeZone = useDemoStore((state) => state.timeZone);
-  const today = clockForTimeZone(timeZone).today();
-  const forecast = buildCashFlowForecast(data, today);
-  return (
-    <>
-      <header className="page-heading">
-        <h1 tabIndex={-1}>{t('insights.title')}</h1>
-      </header>
-      {!data.openingBalance ? (
-        <p className="rounded-xl bg-amber-50 p-4 text-amber-950">
-          {t('forecast.openingRequired')}{' '}
-          <Link className="font-semibold underline" to="/settings">
-            {t('settings.nav')}
-          </Link>
-        </p>
-      ) : (
-        <>
-          <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
-            {t('forecast.disclaimer')}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ForecastSummaryCard
-              title={t('forecast.baseCase')}
-              minimum={forecast.base.minimumBalance}
-              date={forecast.base.minimumBalanceDate}
-              shortfall={forecast.base.shortfall}
-              shortfallLabel={t('forecast.noShortfall')}
-              lowLabel={t('forecast.lowPoint')}
-            />
-            <ForecastSummaryCard
-              title={t('forecast.lateCase')}
-              minimum={forecast.lateInflows.minimumBalance}
-              date={forecast.lateInflows.minimumBalanceDate}
-              shortfall={forecast.lateInflows.shortfall}
-              shortfallLabel={t('forecast.noShortfall')}
-              lowLabel={t('forecast.lowPoint')}
-            />
-          </div>
-          <section className="mt-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold">
-                {t('forecast.dailyTitle')}
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                {forecast.startDate} – {forecast.endDate}
-              </p>
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b text-muted">
-                    <th className="py-3 pr-3 font-medium">
-                      {t('forecast.date')}
-                    </th>
-                    <th className="py-3 pr-3 text-right font-medium">
-                      {t('forecast.inflows')}
-                    </th>
-                    <th className="py-3 pr-3 text-right font-medium">
-                      {t('forecast.outflows')}
-                    </th>
-                    <th className="py-3 pr-3 text-right font-medium">
-                      {t('forecast.baseBalance')}
-                    </th>
-                    <th className="py-3 text-right font-medium">
-                      {t('forecast.lateBalance')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {forecast.base.days.map((day, index) => (
-                    <tr key={day.date} className="border-b border-[#e4e9e2]">
-                      <th scope="row" className="py-3 pr-3 font-medium">
-                        {day.date}
-                      </th>
-                      <td className="py-3 pr-3 text-right">
-                        {day.income ? `${money(day.income)} MMK` : '—'}
-                      </td>
-                      <td className="py-3 pr-3 text-right">
-                        {day.expenses ? `${money(day.expenses)} MMK` : '—'}
-                      </td>
-                      <td className="py-3 pr-3 text-right">
-                        {money(day.closingBalance)}
-                      </td>
-                      <td className="py-3 text-right">
-                        {money(
-                          forecast.lateInflows.days[index]?.closingBalance ??
-                            null,
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="grid gap-3 md:hidden">
-              {forecast.base.days.map((day, index) => (
-                <article
-                  key={day.date}
-                  data-testid="forecast-mobile-day"
-                  className="rounded-2xl bg-[#f5f8fc] p-4"
-                >
-                  <h3 className="font-semibold">{day.date}</h3>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">
-                    <ForecastMetric
-                      label={t('forecast.inflows')}
-                      value={day.income ? `${money(day.income)} MMK` : '—'}
-                    />
-                    <ForecastMetric
-                      label={t('forecast.outflows')}
-                      value={day.expenses ? `${money(day.expenses)} MMK` : '—'}
-                    />
-                    <ForecastMetric
-                      label={t('forecast.baseBalance')}
-                      value={`${money(day.closingBalance)} MMK`}
-                    />
-                    <ForecastMetric
-                      label={t('forecast.lateBalance')}
-                      value={`${money(forecast.lateInflows.days[index]?.closingBalance ?? null)} MMK`}
-                    />
-                  </dl>
-                </article>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-      <RuleInsightsPanel />
-      <DuplicateReviewPanel />
-    </>
-  );
-}
-
-function ForecastMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs leading-5 text-muted">{label}</dt>
-      <dd className="break-words text-sm font-medium tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
-function RuleInsightsPanel() {
-  const { t } = useTranslation();
-  const data = useDemoStore((state) => state.data);
-  const timeZone = useDemoStore((state) => state.timeZone);
-  const today = clockForTimeZone(timeZone).today();
-  const insights = buildRuleInsights(data, today);
-  return (
-    <section className="mb-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-      <h2 className="text-xl font-semibold">{t('insights.ruleTitle')}</h2>
-      <p className="mt-1 text-sm text-muted">{t('insights.ruleHelp')}</p>
-      {insights.length ? (
-        <ul className="mt-4 grid gap-4">
-          {insights.map((insight) => (
-            <li
-              key={insight.id}
-              className={`rounded-2xl p-4 ${insight.severity === 'attention' ? 'bg-amber-50' : 'bg-[#edf3ec]'}`}
-            >
-              <h3 className="font-semibold">
-                {t(`insights.${insight.titleKey}`)}
-              </h3>
-              <p className="mt-2">
-                {t(
-                  `insights.${insight.observedKey}`,
-                  translationValues(insight.values, t),
-                )}
-              </p>
-              <p className="mt-1 text-sm text-muted">
-                {t(`insights.${insight.interpretationKey}`)}
-              </p>
-              {insight.evidence.length ? (
-                <ul className="mt-3 space-y-1 border-t border-black/10 pt-3 text-sm">
-                  {insight.evidence.map((item) => (
-                    <li key={item.id}>
-                      {t('insights.evidenceRow', {
-                        description: item.descriptionKey
-                          ? t(`insights.${item.descriptionKey}`)
-                          : item.description || t('insights.unnamedRecord'),
-                        date: item.date,
-                        amount: money(item.amount),
-                        due: item.dueDate
-                          ? t('insights.evidenceDueDate', {
-                              date: item.dueDate,
-                            })
-                          : '',
-                      })}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-muted">{t('insights.noSignals')}</p>
-      )}
-    </section>
-  );
-}
-
-function DuplicateReviewPanel() {
-  const { t } = useTranslation();
-  const data = useDemoStore((state) => state.data);
-  const resolveDuplicate = useDemoStore((state) => state.resolveDuplicate);
-  const candidates = findPossibleDuplicates(data);
-  const [removeIds, setRemoveIds] = useState<Record<string, string>>({});
-
-  function review(
-    candidate: (typeof candidates)[number],
-    resolution: 'keep_both' | 'duplicate_removed',
-  ) {
-    const redundantTransactionId =
-      removeIds[candidate.fingerprint] ?? candidate.second.id;
-    if (
-      resolution === 'duplicate_removed' &&
-      !window.confirm(t('insights.confirmRemove'))
-    )
-      return;
-    const item: DuplicateReview = {
-      id: duplicateReviewId(
-        candidate.first.id,
-        candidate.second.id,
-        candidate.fingerprint,
-      ),
-      firstTransactionId: candidate.first.id,
-      secondTransactionId: candidate.second.id,
-      fingerprint: candidate.fingerprint,
-      resolution,
-      ...(resolution === 'duplicate_removed' ? { redundantTransactionId } : {}),
-      reviewedAt: systemClock.now().toISOString(),
-    };
-    resolveDuplicate(item);
-  }
-
-  return (
-    <section className="mb-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-      <h2 className="text-xl font-semibold">
-        {t('insights.duplicateReviewTitle')}
-      </h2>
-      <p className="mt-1 text-sm text-muted">{t('insights.duplicatesHelp')}</p>
-      {candidates.length ? (
-        <ul className="mt-4 divide-y divide-[#e4e9e2]">
-          {candidates.map((candidate) => (
-            <li key={candidate.fingerprint} className="py-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[candidate.first, candidate.second].map((transaction) => (
-                  <article
-                    key={transaction.id}
-                    className="rounded-xl bg-canvas p-4"
-                  >
-                    <p className="font-semibold">
-                      {transaction.description || t('insights.unnamedRecord')}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {t(`source.${transaction.source}`)}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {transaction.date} ·{' '}
-                      {t(`transaction.${transaction.type}`)} ·{' '}
-                      {t(`transaction.${transaction.cashStatus}`)}
-                    </p>
-                    <p className="mt-1 font-medium">
-                      {money(transaction.amount)} MMK
-                    </p>
-                  </article>
-                ))}
-              </div>
-              <div className="mt-3 flex flex-wrap items-end gap-3">
-                <label className="grid gap-1 text-sm font-medium">
-                  {t('insights.removeChoice')}
-                  <select
-                    className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
-                    value={
-                      removeIds[candidate.fingerprint] ?? candidate.second.id
-                    }
-                    onChange={(event) =>
-                      setRemoveIds((current) => ({
-                        ...current,
-                        [candidate.fingerprint]: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value={candidate.first.id}>
-                      {t('insights.firstChoice', {
-                        source: t(`source.${candidate.first.source}`),
-                        description:
-                          candidate.first.description ||
-                          t('insights.unnamedRecord'),
-                      })}
-                    </option>
-                    <option value={candidate.second.id}>
-                      {t('insights.secondChoice', {
-                        source: t(`source.${candidate.second.source}`),
-                        description:
-                          candidate.second.description ||
-                          t('insights.unnamedRecord'),
-                      })}
-                    </option>
-                  </select>
-                </label>
-                <button
-                  className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-white"
-                  onClick={() => review(candidate, 'keep_both')}
-                >
-                  {t('insights.keepBoth')}
-                </button>
-                <button
-                  className="min-h-11 rounded-lg border border-[#bccbc0] px-4 py-2 font-semibold"
-                  onClick={() => review(candidate, 'duplicate_removed')}
-                >
-                  {t('insights.removeDuplicate')}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-muted">{t('insights.noDuplicates')}</p>
-      )}
-    </section>
-  );
-}
-
 export function ChatPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
   const timeZone = useDemoStore((state) => state.timeZone);
   const today = clockForTimeZone(timeZone).today();
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState<ReturnType<
-    typeof answerRecordedQuestion
-  > | null>(null);
+  const [messages, setMessages] = useState<Array<{ question: string; answer: ReturnType<typeof answerRecordedQuestion> }>>([]);
+  const transcriptRef = useRef<HTMLElement>(null);
+  // The transcript owns the scroll on desktop, so a new answer has to be
+  // brought into view the way a page-level scroll used to do on its own.
+  useEffect(() => {
+    if (!messages.length) return;
+    const region = transcriptRef.current;
+    if (!region) return;
+    region.scrollTop = region.scrollHeight;
+  }, [messages.length]);
+  const suggestions = t('chat.suggestedQuestions', { returnObjects: true }) as string[];
+  function ask(text: string) {
+    setQuestion(text);
+    setMessages((current) => [...current, { question: text, answer: answerRecordedQuestion(data, today, text) }]);
+  }
   function submit(event: FormEvent) {
     event.preventDefault();
-    setAnswer(answerRecordedQuestion(data, today, question));
+    ask(question);
+    setQuestion('');
   }
   return (
     <div className="chat-page">
@@ -514,40 +192,20 @@ export function ChatPage() {
         <h1 tabIndex={-1}>{t('chat.title')}</h1>
       </header>
       <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
-        {t('chat.limits')}
+        <strong>{t('chat.demoLabel', { defaultValue: 'Demo assistant' })}.</strong> {t('chat.limits')}
       </p>
-      {answer ? (
-        <section
-          className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7"
-          aria-live="polite"
-        >
-          <h2 className="font-semibold">{t('chat.answerTitle')}</h2>
-          <p className="mt-2">
-            {t(answer.messageKey, translationValues(answer.values, t))}
-          </p>
-          {answer.evidence.length ? (
-            <div className="mt-4 border-t border-[#e4e9e2] pt-4">
-              <h3 className="text-sm font-semibold">{t('chat.evidence')}</h3>
-              <ul className="mt-2 space-y-2 text-sm text-muted">
-                {answer.evidence.map((item) => (
-                  <li key={item.id}>
-                    {t('insights.evidenceRow', {
-                      description: item.descriptionKey
-                        ? t(`insights.${item.descriptionKey}`)
-                        : item.description || t('insights.unnamedRecord'),
-                      date: item.date,
-                      amount: money(item.amount),
-                      due: item.dueDate
-                        ? t('insights.evidenceDueDate', { date: item.dueDate })
-                        : '',
-                    })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+      <section className="suggested-questions" aria-label={t('chat.suggestionsTitle', { defaultValue: 'Suggested questions' })}>
+        <h2>{t('chat.suggestionsTitle', { defaultValue: 'Try asking' })}</h2>
+        <div>{suggestions.map((suggestion) => <button key={suggestion} className="suggestion-chip" type="button" onClick={() => ask(suggestion)}>{suggestion}</button>)}</div>
+      </section>
+      {messages.length ? <section ref={transcriptRef} className="chat-transcript" aria-live="polite" aria-label={t('chat.answerTitle')}>
+        {messages.map(({ question: asked, answer }, index) => <div key={`${index}-${asked}`} className="chat-turn">
+          <p className="chat-user-message">{asked}</p>
+          <div className="chat-assistant-message"><strong>{t('chat.answerTitle')}</strong><p>{t(answer.messageKey, translationValues(answer.values, t))}</p>
+            {answer.evidence.length ? <div className="mt-4 border-t border-[#e4e7ef] pt-4"><h3 className="text-sm font-semibold">{t('chat.evidence')}</h3><ul className="mt-2 space-y-2 text-sm text-muted">{answer.evidence.map((item) => <li key={item.id}>{t('chat.evidenceRow', { description: item.description || t('chat.unnamedRecord'), date: item.date, amount: money(item.amount), due: item.dueDate ? t('chat.evidenceDueDate', { date: item.dueDate }) : '' })}</li>)}</ul></div> : null}
+          </div>
+        </div>)}
+      </section> : null}
       <form className="chat-composer" onSubmit={submit}>
         <label className="sr-only" htmlFor="chat-question">
           {t('chat.questionLabel')}
@@ -568,42 +226,5 @@ export function ChatPage() {
         </button>
       </form>
     </div>
-  );
-}
-
-function ForecastSummaryCard({
-  title,
-  minimum,
-  date,
-  shortfall,
-  shortfallLabel,
-  lowLabel,
-}: {
-  title: string;
-  minimum: number | null;
-  date: string | null;
-  shortfall: number;
-  shortfallLabel: string;
-  lowLabel: string;
-}) {
-  const { t } = useTranslation();
-  return (
-    <article className="rounded-3xl border border-[#dce4dc] bg-white p-6">
-      <h2 className="font-semibold">{title}</h2>
-      <p className="mt-3 text-sm text-muted">
-        {lowLabel}
-        {date ? ` · ${date}` : ''}
-      </p>
-      <p className="mt-1 text-2xl font-semibold">
-        {money(minimum)} <span className="text-sm font-medium">MMK</span>
-      </p>
-      <p
-        className={`mt-3 text-sm ${shortfall ? 'font-semibold text-red-800' : 'text-accent'}`}
-      >
-        {shortfall
-          ? t('forecast.shortfall', { amount: money(shortfall) })
-          : shortfallLabel}
-      </p>
-    </article>
   );
 }
