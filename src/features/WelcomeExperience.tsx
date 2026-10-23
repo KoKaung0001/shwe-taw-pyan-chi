@@ -133,12 +133,12 @@ export function WelcomeExperience({ onAuthenticated, onExploreDemo }: {
     <section className="welcome-landing-copy" aria-labelledby="welcome-heading">
       <h1 id="welcome-heading">Bring your money <em>together.</em></h1>
       <p className="welcome-hook">Your finances, in one place</p>
-      <p className="welcome-explanation">Make sense of every little spend and every bit of income, all in one calm place.</p>
+      <p className="welcome-explanation">For freelancers and small businesses: organize income, track payments, and prepare a clearer financial summary.</p>
       <button className="welcome-primary-button" type="button" onClick={begin} disabled={phase !== 'landing'}>
         Get Started <ArrowRight size={18} aria-hidden="true" />
       </button>
-      {import.meta.env.DEV && onExploreDemo ? <button className="welcome-demo-preview" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
-      <span className="welcome-reassurance"><LockKeyhole size={14} aria-hidden="true" /> Your financial records stay yours</span>
+      {onExploreDemo ? <button className="welcome-demo-preview" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
+      <span className="welcome-reassurance"><LockKeyhole size={14} aria-hidden="true" /> Prototype: use test information only</span>
     </section>
 
     <section className="welcome-auth-card" aria-labelledby="auth-heading" aria-hidden={!isAuthRoute || phase !== 'ready'}>
@@ -152,7 +152,7 @@ export function WelcomeExperience({ onAuthenticated, onExploreDemo }: {
         <button className="welcome-primary-button welcome-auth-submit" type="submit" disabled={submitting}>{submitting ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}<ArrowRight size={17} aria-hidden="true" /></button>
       </form>
       <p className="welcome-auth-switch">{isSignup ? 'Already have an account?' : <>New to <BrandWordmark inline />?</>} <Link to={isSignup ? '/auth' : '/signup'}>{isSignup ? 'Log in' : 'Sign up'}</Link></p>
-      {import.meta.env.DEV && onExploreDemo ? <button className="welcome-demo-preview welcome-demo-preview-auth" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
+      {onExploreDemo ? <button className="welcome-demo-preview welcome-demo-preview-auth" type="button" onClick={onExploreDemo}>Explore with demo data</button> : null}
       {message ? <p className="welcome-auth-message" role="status">{message}</p> : null}
     </section>
 
@@ -161,33 +161,33 @@ export function WelcomeExperience({ onAuthenticated, onExploreDemo }: {
 
     {!isAuthRoute ? <section className="welcome-bank-context" aria-labelledby="bank-context-heading">
       <header className="welcome-context-intro">
-        <span className="welcome-context-kicker">Shwe Taw Pyan Chi for financial institutions</span>
-        <h2 id="bank-context-heading">Empowering Banks Through Smarter Financial Insights</h2>
-        <p>We help financial institutions better understand freelancers and small businesses through organized financial records, transparent readiness assessments, and AI-powered insights.</p>
+        <span className="welcome-context-kicker">For Myanmar freelancers and small businesses</span>
+        <h2 id="bank-context-heading">Everyday records. A clearer financial story.</h2>
+        <p>Bring income, expenses, and unpaid invoices together. Understand your recorded cash movement and prepare an app-generated summary for a conversation with your bank.</p>
       </header>
       <div className="welcome-context-points">
         <article className="welcome-context-point">
           <span className="welcome-context-number">01</span>
           <div>
-            <h3>Why Banks Can Trust Us</h3>
-            <p className="welcome-context-hook">Transparent Data. Explainable Insights. Responsible Decisions.</p>
-            <p className="welcome-context-detail">We organize income, expenses, cash flow, and financial documents into clear, easy-to-review reports. Our approach emphasizes data transparency, user consent, and explainable assessments—helping banks make more informed lending decisions while keeping final approval in their hands.</p>
+            <h3>Know what came in and went out</h3>
+            <p className="welcome-context-hook">Record it. Review it. See the movement.</p>
+            <p className="welcome-context-detail">Track settled income and expenses, follow cash-flow trends, and keep unpaid receivables separate until they are paid. Receipt review currently uses sample extraction or manual entry; it does not scan images with OCR.</p>
           </div>
         </article>
         <article className="welcome-context-point">
           <span className="welcome-context-number">02</span>
           <div>
-            <h3>Why Partner With Us?</h3>
-            <p className="welcome-context-hook">Reach Underserved Customers. Unlock New Opportunities.</p>
-            <p className="welcome-context-detail">Many freelancers and small businesses lack the organized financial records needed to demonstrate their financial health. Shwe Taw Pyan Chi helps bridge this gap, enabling banks to better understand these customers and explore new opportunities in the underserved SME and independent-worker markets.</p>
+            <h3>Give your spending a reality check</h3>
+            <p className="welcome-context-hook">A little humor. Numbers you can trace.</p>
+            <p className="welcome-context-detail">Try a playful demo assistant that responds using your recorded activity. Replies are scripted, with supporting records. Purchase comparisons show monthly cash movement; they cannot establish your available cash or guarantee you can afford a purchase.</p>
           </div>
         </article>
         <article className="welcome-context-point">
           <span className="welcome-context-number">03</span>
           <div>
-            <h3>How We Help Banks Grow</h3>
-            <p className="welcome-context-hook">Reduce Manual Work. Discover New Revenue Opportunities.</p>
-            <p className="welcome-context-detail">By organizing financial information and highlighting relevant cash-flow insights, our platform has the potential to reduce document-review effort, improve application preparation, and help banks identify qualified potential borrowers. More efficient processes and broader customer reach can create opportunities for sustainable business growth.</p>
+            <h3>Prepare for the bank conversation</h3>
+            <p className="welcome-context-hook">See the gaps. Explain the records. Export a summary.</p>
+            <p className="welcome-context-detail">Explore three example bank checklists, see the components of your app-only FlowScore, and download a one-page readiness report. Requirements are illustrative and lender acceptance is unconfirmed. Banks decide which evidence they accept and whether to approve a loan.</p>
           </div>
         </article>
       </div>

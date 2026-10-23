@@ -6,7 +6,9 @@ Use synthetic or test information only. The app uses Supabase Auth and Postgres;
 
 Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md), apply the database migration, set `.env.local`, and run `npm ci` followed by `npm run dev`. Configure Supabase email confirmation according to the intended test flow. New accounts have no sample transactions or receivables.
 
-For a local UI walkthrough when Supabase is unreachable, choose **Explore with demo data** on the landing or sign-in screen. This development-only preview opens the app with synthetic transactions spanning the latest 12 months, three receivables, and reviewed receipt/screenshot evidence for FlowScore. It does not use Supabase. Changes last only for that preview session and are discarded when you exit or reload; deployed builds do not show this option.
+For a walkthrough that does not require Supabase, build with `npm run build:demo`, deploy the generated `dist/` directory, and choose **Explore with demo data** on the landing or sign-in screen. The presentation build enables a public feature switch only; it exposes no credentials. The demo uses an isolated in-memory workspace and makes no Supabase database or Auth requests. Changes are discarded when you exit or reload. Re-entering restores the initial sample records.
+
+The presentation dataset includes 43 settled records over 12 months, two unpaid and one paid receivable, and reviewed receipt/screenshot examples for FlowScore. Sample dates are fixed; do not present them as live or independently verified financial history.
 
 ## Walkthrough
 

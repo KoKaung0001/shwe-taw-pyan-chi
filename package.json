@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
+    "build:demo": "tsc --noEmit && vite build --mode demo",
+    "test:demo": "npm run build:demo && playwright test --config playwright.demo.config.ts",
     "preview": "vite preview --host 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

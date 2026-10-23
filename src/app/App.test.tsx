@@ -1,24 +1,43 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { App } from './App';
 import { useDemoStore } from '../store/demoStore';
 import { setAuthUser } from '../services/supabaseAuthSession';
 import { emptyAppData } from '../domain/types';
+import { loadWorkspace, saveWorkspace } from '../services/workspaceRepository';
 vi.mock('../services/supabaseAuthSession', async (importOriginal) => ({
   ...await importOriginal<typeof import('../services/supabaseAuthSession')>(),
   startAuthSession: () => () => {},
 }));
 vi.mock('../services/workspaceRepository', () => ({
-  loadWorkspace: async () => ({ data: emptyAppData(), storageNotice: null, timeZone: 'Asia/Rangoon' }),
+  loadWorkspace: vi.fn(async () => ({ data: emptyAppData(), storageNotice: null, timeZone: 'Asia/Rangoon' })),
   getImportStatus: async () => 'skipped',
   getLocalImportCandidate: async () => null,
-  saveWorkspace: async () => {},
+  saveWorkspace: vi.fn(async () => {}),
   importLocalWorkspace: async () => ({ data: emptyAppData(), storageNotice: null, timeZone: 'Asia/Rangoon' }),
   skipLocalWorkspaceImport: async () => {},
 }));
 afterEach(() => setAuthUser(null));
 describe('foundation', () => {
+  it('keeps demo changes isolated when a late account session arrives', async () => {
+    setAuthUser(null);
+    vi.mocked(loadWorkspace).mockClear();
+    vi.mocked(saveWorkspace).mockClear();
+    render(<MemoryRouter><App /></MemoryRouter>);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Explore with demo data' })[0]);
+    await screen.findByText(/Demo preview.*sample data/);
+    act(() => setAuthUser({ id: 'late-account', name: 'Account', email: 'account@example.com' }));
+    act(() => useDemoStore.getState().settleReceivable('demo-receivable-unpaid-b'));
+    expect(screen.getByText(/Demo preview.*sample data/)).toBeVisible();
+    expect(useDemoStore.getState().data.transactions).toHaveLength(44);
+    expect(loadWorkspace).not.toHaveBeenCalled();
+    expect(saveWorkspace).not.toHaveBeenCalled();
+    act(() => setAuthUser(null));
+    fireEvent.click(screen.getByRole('button', { name: 'Exit demo' }));
+    expect(useDemoStore.getState().data.transactions).toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Get Started' })).toBeVisible();
+  });
   it('retains the reporting period and chart mode after visiting credit readiness', async () => {
     setAuthUser({ id: 'test-user', name: 'Demo User', email: 'demo@example.com' });
     render(<MemoryRouter initialEntries={['/dashboard']}><App /></MemoryRouter>);

@@ -44,12 +44,13 @@ function routeName(pathname: string, t: TFunction) {
 export function App() {
   const { t } = useTranslation();
   const storageNotice = useDemoStore((state) => state.storageNotice);
-  const { user, loading: authLoading, error: authError } = useAuthSession();
+  const { user: accountUser, loading: authLoading, error: authError } = useAuthSession();
+  const [isDemoPreview, setIsDemoPreview] = useState(false);
+  const user = isDemoPreview ? DEMO_PREVIEW_USER : accountUser;
   const location = useLocation();
   const navigate = useNavigate();
   const previousPath = useRef(location.pathname);
   const [workspaceLoad, setWorkspaceLoad] = useState<{ userId: string | null; ready: boolean; error: string | null }>({ userId: null, ready: false, error: null });
-  const isDemoPreview = user?.id === DEMO_PREVIEW_USER.id;
   const workspaceReady = Boolean(user && (isDemoPreview || (workspaceLoad.userId === user.id && workspaceLoad.ready)));
   const workspaceError = user && workspaceLoad.userId === user.id ? workspaceLoad.error : null;
   const [importCandidate, setImportCandidate] = useState<Awaited<ReturnType<typeof getLocalImportCandidate>>>(null);
@@ -146,7 +147,9 @@ export function App() {
   async function signOutAndLeave() {
     if (!user) return;
     if (isDemoPreview) {
-      setAuthUser(null);
+      useDemoStore.setState({ data: emptyAppData(), storageNotice: null });
+      setWorkspaceLoad({ userId: null, ready: false, error: null });
+      setIsDemoPreview(false);
       navigate('/', { replace: true });
       return;
     }
@@ -163,15 +166,18 @@ export function App() {
   if (location.pathname === '/' || location.pathname === '/auth' || location.pathname === '/signup') {
     return <WelcomeExperience onAuthenticated={async (authenticatedUser) => {
       setAuthUser(authenticatedUser);
-    }} onExploreDemo={import.meta.env.DEV ? async () => {
+    }} onExploreDemo={import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO === 'true' ? async () => {
       const { createSeedData } = await import('../domain/seedData');
       useDemoStore.setState({ data: createSeedData(), storageNotice: null, timeZone: 'Asia/Rangoon' });
       setWorkspaceLoad({ userId: DEMO_PREVIEW_USER.id, ready: true, error: null });
-      setAuthUser(DEMO_PREVIEW_USER);
+      setImportCandidate(null);
+      setDashboardPeriod('this_week');
+      setDashboardChartView('cash_flow');
+      setIsDemoPreview(true);
       navigate('/dashboard', { replace: true });
     } : undefined} />;
   }
-  if (authLoading) return <main className="min-h-screen grid place-items-center p-8"><p role="status">Connecting to your account…</p></main>;
+  if (authLoading && !isDemoPreview) return <main className="min-h-screen grid place-items-center p-8"><p role="status">Connecting to your account…</p></main>;
   if (!user) return <Navigate to="/" replace />;
   if (!workspaceReady) return <main className="min-h-screen grid place-items-center p-8"><p role="status">{workspaceError ?? authError ?? 'Loading your records…'}</p></main>;
 
