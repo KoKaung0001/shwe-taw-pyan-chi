@@ -417,6 +417,11 @@ export function TransactionsPage() {
       window.requestAnimationFrame(() => document.getElementById('receivables')?.scrollIntoView({ block: 'start' }));
     }
   }, [location.hash]);
+  const receivablesByTransaction = new Map(
+    data.receivables
+      .filter((item) => item.linkedIncomeTransactionId)
+      .map((item) => [item.linkedIncomeTransactionId, item]),
+  );
   const filtered = data.transactions
     .filter(
       (item) =>
@@ -424,7 +429,7 @@ export function TransactionsPage() {
         (categoryFilter === 'all' || item.categoryId === categoryFilter) &&
         (!startDateFilter || item.date >= startDateFilter) &&
         (!endDateFilter || item.date <= endDateFilter) &&
-        `${item.description ?? ''} ${item.date} ${item.categoryId ?? ''}`
+        `${item.description ?? ''} ${item.date} ${item.categoryId ?? ''} ${receivablesByTransaction.get(item.id)?.counterparty ?? ''}`
           .toLowerCase()
           .includes(query.toLowerCase()),
     )
@@ -754,11 +759,19 @@ export function TransactionsPage() {
                     {item.description ||
                       t(`category.${item.categoryId ?? 'uncategorized'}`)}
                   </p>
+                  {receivablesByTransaction.has(item.id) ? (
+                    <p className="mt-1 text-sm text-muted">
+                      {t('receivable.paymentFrom', {
+                        defaultValue: 'Receivable payment from {{name}}',
+                        name: receivablesByTransaction.get(item.id)!.counterparty,
+                      })}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-sm text-muted">
                     {item.date} · {t(`transaction.${item.type}`)} ·{' '}
                     {t(`transaction.${item.cashStatus}`)}
-                    {' '}Â· {t(`source.${item.source}`)}
-                    {item.ocrReviewStatus === 'reviewed' ? ` Â· ${t('capture.reviewed', { defaultValue: 'Reviewed' })}` : ''}
+                    {' '}· {t(`source.${item.source}`)}
+                    {item.ocrReviewStatus === 'reviewed' ? ` · ${t('capture.reviewed', { defaultValue: 'Reviewed' })}` : ''}
                     {item.dueDate
                       ? ` · ${t('transaction.dueDate')}: ${item.dueDate}`
                       : ''}

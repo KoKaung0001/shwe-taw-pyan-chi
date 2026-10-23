@@ -28,7 +28,7 @@ const record = (
 });
 
 describe('reporting selectors', () => {
-  it('selects this month, last month and rolling 30-day date ranges', () => {
+  it('selects calendar months and rolling multi-month date ranges', () => {
     expect(getReportingRange('this_month', '2026-03-04')).toEqual({
       startDate: '2026-03-01',
       endDate: '2026-03-04',
@@ -37,9 +37,26 @@ describe('reporting selectors', () => {
       startDate: '2026-02-01',
       endDate: '2026-02-28',
     });
-    expect(getReportingRange('last_30_days', '2026-03-04')).toEqual({
-      startDate: '2026-02-03',
+    expect(getReportingRange('last_3_months', '2026-03-04')).toEqual({
+      startDate: '2025-12-05',
       endDate: '2026-03-04',
+    });
+    expect(getReportingRange('last_6_months', '2026-03-04')).toEqual({
+      startDate: '2025-09-05',
+      endDate: '2026-03-04',
+    });
+    expect(getReportingRange('last_year', '2026-03-04')).toEqual({
+      startDate: '2025-03-05',
+      endDate: '2026-03-04',
+    });
+  });
+
+  it('clamps rolling ranges at month ends and leap days', () => {
+    expect(getReportingRange('last_3_months', '2026-05-31')).toEqual({
+      startDate: '2026-03-01', endDate: '2026-05-31',
+    });
+    expect(getReportingRange('last_year', '2024-02-29')).toEqual({
+      startDate: '2023-03-01', endDate: '2024-02-29',
     });
   });
 

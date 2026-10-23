@@ -24,6 +24,25 @@ const transaction = (
 });
 
 describe('rule-based analysis', () => {
+  it('grounds purchase roasts in settled month-to-date movement without counting pending income', () => {
+    const data = { ...emptyAppData(), transactions: [
+      transaction({ id: 'income', type: 'income', amount: 200_000 }),
+      transaction({ id: 'expense', amount: 80_000 }),
+      transaction({ id: 'pending', type: 'income', amount: 900_000, cashStatus: 'pending', dueDate: '2026-10-25' }),
+      transaction({ id: 'old', type: 'income', amount: 700_000, date: '2026-09-10' }),
+    ] };
+    const answer = answerRecordedQuestion(data, '2026-10-23', 'Can I buy headphones for 150,000 MMK and last the month?');
+    expect(answer).toMatchObject({ messageKey: 'chat.purchaseOverNet', values: { price: 150_000, income: 200_000, expenses: 80_000, net: 120_000, after: -30_000 } });
+    expect(answer.evidence.map((item) => item.id).sort()).toEqual(['expense', 'income']);
+    expect(answerRecordedQuestion(data, '2026-10-23', 'Can I afford headphones for 50k?')).toMatchObject({ messageKey: 'chat.purchaseWithinNet', values: { price: 50_000, after: 70_000 } });
+    expect(answerRecordedQuestion(data, '2026-10-23', 'Roast my spending')).toMatchObject({ messageKey: 'chat.periodAnswer', values: { net: 120_000 } });
+  });
+
+  it('asks for a price rather than inventing one, and handles missing records', () => {
+    expect(answerRecordedQuestion(emptyAppData(), '2026-10-23', 'Can I buy this?').messageKey).toBe('chat.purchasePriceNeeded');
+    expect(answerRecordedQuestion(emptyAppData(), '2026-10-23', 'Can I buy this for 150k?').messageKey).toBe('chat.noTransactionsAnswer');
+    expect(answerRecordedQuestion(emptyAppData(), '2026-10-23', 'Can I buy this for 10k or 20k?').messageKey).toBe('chat.purchasePriceNeeded');
+  });
   it('finds strong duplicate matches, remembers Keep both, and reopens changed versions', () => {
     const first = transaction({ id: 'manual-1', description: 'Shop supplies' });
     const second = transaction({

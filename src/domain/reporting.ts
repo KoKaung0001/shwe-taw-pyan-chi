@@ -4,7 +4,7 @@ import {
   type Transaction,
 } from './types';
 
-export type ReportingPeriod = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30_days';
+export type ReportingPeriod = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_3_months' | 'last_6_months' | 'last_year';
 
 export interface DateRange {
   startDate: string;
@@ -82,8 +82,13 @@ export function getReportingRange(
     const startDate = period === 'last_week' ? addCalendarDays(monday, -7) : monday;
     return { startDate, endDate: addCalendarDays(startDate, 6) };
   }
-  if (period === 'last_30_days')
-    return { startDate: addCalendarDays(today, -29), endDate: today };
+  if (period === 'last_3_months' || period === 'last_6_months' || period === 'last_year') {
+    const months = period === 'last_3_months' ? 3 : period === 'last_6_months' ? 6 : 12;
+    const startMonth = monthShiftStart(today, -months);
+    const lastDay = Number(addCalendarDays(monthShiftStart(startMonth, 1), -1).slice(8));
+    const anniversary = `${startMonth.slice(0, 8)}${String(Math.min(Number(today.slice(8)), lastDay)).padStart(2, '0')}`;
+    return { startDate: addCalendarDays(anniversary, 1), endDate: today };
+  }
   if (period === 'last_month') {
     const startDate = monthShiftStart(today, -1);
     return { startDate, endDate: addCalendarDays(monthStart(today), -1) };

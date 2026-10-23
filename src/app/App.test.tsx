@@ -5,6 +5,10 @@ import { App } from './App';
 import { useDemoStore } from '../store/demoStore';
 import { setAuthUser } from '../services/supabaseAuthSession';
 import { emptyAppData } from '../domain/types';
+vi.mock('../services/supabaseAuthSession', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../services/supabaseAuthSession')>(),
+  startAuthSession: () => () => {},
+}));
 vi.mock('../services/workspaceRepository', () => ({
   loadWorkspace: async () => ({ data: emptyAppData(), storageNotice: null, timeZone: 'Asia/Rangoon' }),
   getImportStatus: async () => 'skipped',
@@ -15,6 +19,18 @@ vi.mock('../services/workspaceRepository', () => ({
 }));
 afterEach(() => setAuthUser(null));
 describe('foundation', () => {
+  it('retains the reporting period and chart mode after visiting credit readiness', async () => {
+    setAuthUser({ id: 'test-user', name: 'Demo User', email: 'demo@example.com' });
+    render(<MemoryRouter initialEntries={['/dashboard']}><App /></MemoryRouter>);
+    const period = await screen.findByLabelText('Reporting period');
+    fireEvent.change(period, { target: { value: 'last_6_months' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Net change' }));
+    fireEvent.click(screen.getAllByRole('link', { name: 'Credit Readiness' })[0]);
+    await screen.findByRole('heading', { name: 'Credit readiness' });
+    fireEvent.click(screen.getAllByRole('link', { name: 'Home' })[0]);
+    expect(await screen.findByLabelText('Reporting period')).toHaveValue('last_6_months');
+    expect(screen.getByRole('button', { name: 'Net change' })).toHaveAttribute('aria-pressed', 'true');
+  });
   it('keeps the account session and grounded assistant after navigation', async () => {
     setAuthUser({ id: 'test-user', name: 'Demo User', email: 'demo@example.com' });
     render(

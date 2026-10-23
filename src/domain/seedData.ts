@@ -1,6 +1,17 @@
-import { emptyAppData, transactionSchema, type AppData, type Transaction } from './types';
+import {
+  emptyAppData,
+  receivableSchema,
+  transactionSchema,
+  type AppData,
+  type Transaction,
+} from './types';
 
-const rows: Array<Pick<Transaction, 'id' | 'type' | 'amount' | 'date' | 'categoryId' | 'description' | 'occurredAt'>> = [
+type SeedRow = Pick<
+  Transaction,
+  'id' | 'type' | 'amount' | 'date' | 'categoryId' | 'description' | 'occurredAt'
+>;
+
+const octoberRows: SeedRow[] = [
   { id: 'oct-2026-01-salary', type: 'income', amount: 1_200_000, date: '2026-10-01', categoryId: 'client-income', description: 'Monthly salary', occurredAt: '2026-10-01T09:00:00+06:30' },
   { id: 'oct-2026-02-food', type: 'expense', amount: 85_000, date: '2026-10-02', categoryId: 'food', description: 'Groceries', occurredAt: '2026-10-02T18:10:00+06:30' },
   { id: 'oct-2026-03-transport', type: 'expense', amount: 18_000, date: '2026-10-03', categoryId: 'transport', description: 'Transportation', occurredAt: '2026-10-03T08:25:00+06:30' },
@@ -24,18 +35,101 @@ const rows: Array<Pick<Transaction, 'id' | 'type' | 'amount' | 'date' | 'categor
   { id: 'oct-2026-21-food', type: 'expense', amount: 25_000, date: '2026-10-21', categoryId: 'food', description: 'Meals', occurredAt: '2026-10-21T19:30:00+06:30' },
 ];
 
+function priorYearRows(): SeedRow[] {
+  const rows: SeedRow[] = [];
+  for (let monthOffset = 11; monthOffset >= 1; monthOffset -= 1) {
+    const date = new Date(Date.UTC(2026, 9 - monthOffset, 1));
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const monthName = `${year}-${month}`;
+    const income = 480_000 + ((monthOffset * 37_000) % 180_000);
+    const expense = 260_000 + ((monthOffset * 23_000) % 120_000);
+    rows.push(
+      {
+        id: `${monthName}-client-payment`,
+        type: 'income',
+        amount: income,
+        date: `${monthName}-08`,
+        categoryId: 'client-income',
+        description: 'Client project payment',
+        occurredAt: `${monthName}-08T10:00:00+06:30`,
+      },
+      {
+        id: `${monthName}-business-costs`,
+        type: 'expense',
+        amount: expense,
+        date: `${monthName}-19`,
+        categoryId: 'supplies',
+        description: 'Business and operating costs',
+        occurredAt: `${monthName}-19T15:00:00+06:30`,
+      },
+    );
+  }
+  return rows;
+}
+
 export function createSeedData(): AppData {
   const data = emptyAppData();
-  data.transactions = rows.map((row) => transactionSchema.parse({
-    ...row,
-    currency: 'MMK',
-    counterpartyId: null,
-    cashStatus: 'settled',
-    confirmationStatus: 'not_applicable',
-    source: 'manual',
-    ocrReviewStatus: 'not_applicable',
-    createdAt: row.occurredAt,
-    updatedAt: row.occurredAt,
-  }));
+  const rows = [...priorYearRows(), ...octoberRows];
+  data.transactions = rows.map((row, index) => {
+    const hasReviewedEvidence = index < 26; // 26 of 43 settled records (about 60%).
+    const source = hasReviewedEvidence
+      ? index % 2 === 0
+        ? 'receipt_image'
+        : 'screenshot'
+      : 'manual';
+    return transactionSchema.parse({
+      ...row,
+      currency: 'MMK',
+      counterpartyId: null,
+      cashStatus: 'settled',
+      confirmationStatus: 'not_applicable',
+      source,
+      ocrReviewStatus: hasReviewedEvidence ? 'reviewed' : 'not_applicable',
+      createdAt: row.occurredAt,
+      updatedAt: row.occurredAt,
+    });
+  });
+
+  data.receivables = [
+    receivableSchema.parse({
+      id: 'demo-receivable-paid-october',
+      amount: 120_000,
+      currency: 'MMK',
+      date: '2026-10-05',
+      counterparty: 'Shwe Lin Studio',
+      description: 'Design work, paid and recorded as income',
+      categoryId: 'other-income',
+      status: 'paid',
+      settledAt: '2026-10-12T13:20:00+06:30',
+      linkedIncomeTransactionId: 'oct-2026-12-other-income',
+      createdAt: '2026-10-05T09:00:00+06:30',
+      updatedAt: '2026-10-12T13:20:00+06:30',
+    }),
+    receivableSchema.parse({
+      id: 'demo-receivable-unpaid-a',
+      amount: 325_000,
+      currency: 'MMK',
+      date: '2026-10-18',
+      counterparty: 'Ave Chan Market',
+      description: 'Invoice for product order',
+      categoryId: 'sales',
+      status: 'unpaid',
+      createdAt: '2026-10-18T11:00:00+06:30',
+      updatedAt: '2026-10-18T11:00:00+06:30',
+    }),
+    receivableSchema.parse({
+      id: 'demo-receivable-unpaid-b',
+      amount: 185_000,
+      currency: 'MMK',
+      date: '2026-10-21',
+      counterparty: 'Mya Thida Boutique',
+      description: 'Outstanding freelance invoice',
+      categoryId: 'client-income',
+      status: 'unpaid',
+      createdAt: '2026-10-21T14:30:00+06:30',
+      updatedAt: '2026-10-21T14:30:00+06:30',
+    }),
+  ];
   return data;
 }

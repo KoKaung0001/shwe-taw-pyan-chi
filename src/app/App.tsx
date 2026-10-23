@@ -8,6 +8,8 @@ import { Placeholder } from '../features/Placeholder';
 import { CapturePage } from '../features/CapturePage';
 import { AddPage, AddReceivablePage } from '../features/AddPage';
 import { DashboardPage } from '../features/DashboardPage';
+import type { ReportingPeriod } from '../domain/reporting';
+import type { FinancialChartView } from '../features/FinancialChart';
 import { ChatPage } from '../features/AnalysisPages';
 import { ReadinessPage } from '../features/ReadinessPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -52,6 +54,8 @@ export function App() {
   const workspaceError = user && workspaceLoad.userId === user.id ? workspaceLoad.error : null;
   const [importCandidate, setImportCandidate] = useState<Awaited<ReturnType<typeof getLocalImportCandidate>>>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [dashboardPeriod, setDashboardPeriod] = useState<ReportingPeriod>('this_week');
+  const [dashboardChartView, setDashboardChartView] = useState<FinancialChartView>('cash_flow');
 
   useEffect(() => startAuthSession(), []);
 
@@ -231,7 +235,7 @@ export function App() {
               <Routes>
                 {screens.filter(({ id }) => id !== 'schedules' && id !== 'owed').map(({ id, path }) => (
                   <Route key={id} path={path} element={
-                    id === 'dashboard' ? <DashboardPage />
+                    id === 'dashboard' ? <DashboardPage period={dashboardPeriod} onPeriodChange={setDashboardPeriod} chartView={dashboardChartView} onChartViewChange={setDashboardChartView} />
                       : id === 'transactions' ? <TransactionsPage />
                         : id === 'add' ? <AddPage />
                         : id === 'schedules' ? <SchedulesPage />

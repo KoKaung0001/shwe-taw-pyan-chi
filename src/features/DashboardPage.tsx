@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -10,14 +10,17 @@ import { FinancialChart, type FinancialChartView } from './FinancialChart';
 
 const money = (amount: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(amount);
 
-export function DashboardPage() {
+export function DashboardPage({ period, onPeriodChange, chartView, onChartViewChange }: {
+  period: ReportingPeriod;
+  onPeriodChange: (period: ReportingPeriod) => void;
+  chartView: FinancialChartView;
+  onChartViewChange: (view: FinancialChartView) => void;
+}) {
   const { t } = useTranslation();
   const { user } = useAuthSession();
   const data = useDemoStore((state) => state.data);
   const timeZone = useDemoStore((state) => state.timeZone);
   const today = clockForTimeZone(timeZone).today();
-  const [period, setPeriod] = useState<ReportingPeriod>('this_week');
-  const [chartView, setChartView] = useState<FinancialChartView>('cash_flow');
   const range = useMemo(() => getReportingRange(period, today), [period, today]);
   const summary = useMemo(() => summarizePeriod(data.transactions, range), [data.transactions, range]);
   const outstanding = useMemo(() => summarizeOutstanding(data, today), [data, today]);
@@ -31,12 +34,14 @@ export function DashboardPage() {
     <header className="page-heading">
       <div><h1 tabIndex={-1}>{t('dashboard.welcome', { name: user?.name ?? '', defaultValue: user?.name ? `Welcome, ${user.name}` : 'Welcome' })}</h1><p className="text-muted">{t('dashboard.context', { defaultValue: 'Your recorded activity at a glance.' })}</p></div>
       <label className="period-control">{t('dashboard.reportingPeriod', { defaultValue: 'Period' })}
-        <select className="app-select" value={period} onChange={(event) => setPeriod(event.target.value as ReportingPeriod)}>
+        <select className="app-select" value={period} onChange={(event) => onPeriodChange(event.target.value as ReportingPeriod)}>
           <option value="this_week">{t('dashboard.thisWeek', { defaultValue: 'This week' })}</option>
           <option value="last_week">{t('dashboard.lastWeek', { defaultValue: 'Last week' })}</option>
           <option value="this_month">{t('dashboard.thisMonth')}</option>
           <option value="last_month">{t('dashboard.lastMonth')}</option>
-          <option value="last_30_days">{t('dashboard.last30Days')}</option>
+          <option value="last_3_months">{t('dashboard.last3Months')}</option>
+          <option value="last_6_months">{t('dashboard.last6Months')}</option>
+          <option value="last_year">{t('dashboard.lastYear')}</option>
         </select>
       </label>
     </header>
@@ -54,7 +59,7 @@ export function DashboardPage() {
         <p className="dashboard-chart-hook">{t('dashboard.chartHook', { defaultValue: 'See the pace of your cash flow' })}</p>
         <p className="dashboard-chart-explanation">{t('dashboard.chartExplanation', { startDate: range.startDate, endDate: range.endDate, defaultValue: 'Daily settled income and expenses from {{startDate}} to {{endDate}}.' })}</p>
       </header>
-      <FinancialChart values={financialChart} view={chartView} onViewChange={setChartView} />
+      <FinancialChart key={period} values={financialChart} view={chartView} onViewChange={onChartViewChange} />
     </section>
     <section className="surface-card recent-card">
       <div className="section-heading-row"><h2>{t('dashboard.recent')}</h2><Link className="text-link" to="/transactions">{t('transactions.open')} <ArrowRight size={16} /></Link></div>

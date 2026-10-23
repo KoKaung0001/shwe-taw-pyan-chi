@@ -239,6 +239,24 @@ export function answerRecordedQuestion(
   const weeklyPeriod = summarizePeriod(data.transactions, weekRange);
   const weeklyExpenses = data.transactions.filter((item) => item.cashStatus === 'settled' && item.type === 'expense' && item.date >= weekRange.startDate && item.date <= weekRange.endDate);
   const period = summarizePeriod(data.transactions, { startDate: `${today.slice(0, 7)}-01`, endDate: today });
+  if (/\bbuy\b|\bafford\b|\bpurchase\b|\bsurvive\b|last (?:the|through).*month|make it.*month/.test(query)) {
+    const matches = [...query.matchAll(/\b(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\s*(mmk|kyats?)\b|\b(\d+(?:\.\d+)?)\s*(k|m)\b/g)];
+    const match = matches.length === 1 ? matches[0] : undefined;
+    const suffix = match?.[2] ?? match?.[5];
+    const price = match ? Number((match[1] ?? match[4]).replaceAll(',', '')) * (suffix === 'k' ? 1_000 : suffix === 'm' ? 1_000_000 : 1) : NaN;
+    if (!Number.isSafeInteger(price) || price <= 0 || price > 1_000_000_000_000) {
+      return { supported: true, messageKey: 'chat.purchasePriceNeeded', values: {}, evidence: [] };
+    }
+    if (!period.transactionCount) {
+      return { supported: true, messageKey: 'chat.noTransactionsAnswer', values: {}, evidence: [] };
+    }
+    return {
+      supported: true,
+      messageKey: price > period.net ? 'chat.purchaseOverNet' : 'chat.purchaseWithinNet',
+      values: { price, income: period.income, expenses: period.expenses, net: period.net, after: period.net - price },
+      evidence: evidenceFor(data.transactions.filter((item) => item.cashStatus === 'settled' && item.date >= period.startDate && item.date <= period.endDate)),
+    };
+  }
   if (/income/.test(query) && /week/.test(query)) {
     const matches = data.transactions.filter((item) => item.cashStatus === 'settled' && item.type === 'income' && item.date >= weekRange.startDate && item.date <= weekRange.endDate);
     return { supported: true, messageKey: matches.length ? 'chat.weeklyIncomeAnswer' : 'chat.noWeeklyIncomeAnswer', values: { amount: weeklyPeriod.income, startDate: weekRange.startDate, endDate: weekRange.endDate }, evidence: evidenceFor(matches) };
@@ -310,7 +328,7 @@ export function answerRecordedQuestion(
           evidence: [],
         };
   }
-  if (/income|expense|spend|cash movement|total/.test(query)) {
+  if (/income|expense|spend|cash movement|total|roast|reality check/.test(query)) {
     return {
       supported: true,
       messageKey: 'chat.periodAnswer',

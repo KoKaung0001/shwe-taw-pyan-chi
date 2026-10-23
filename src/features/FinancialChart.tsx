@@ -217,13 +217,13 @@ export function FinancialChart({ values, view, onViewChange }: FinancialChartPro
             </g>;
           })}
           <path className="financial-chart-net-change-line" d={linePath} />
-          {days.map((day, index) => <circle
+          {days.map((day, index) => (days.length <= 31 && slotWidth >= 12) || activeIndex === index ? <circle
             key={`point-${day.date}`}
             className={`financial-chart-net-change-point${day.dailyNetChange > 0 ? ' is-positive' : day.dailyNetChange < 0 ? ' is-negative' : ''}${activeIndex === index ? ' is-selected' : ''}`}
             cx={xFor(index)}
             cy={yFor(lineValues[index], topDomain, netChangePlot.top, netChangePlot.bottom)}
-            r={days.length > 20 ? 2.5 : 4}
-          />)}
+            r={activeIndex === index ? 4 : days.length > 20 ? 2.5 : 4}
+          /> : null)}
         </>}
 
         {days.map((day, index) => <g
