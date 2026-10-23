@@ -1,43 +1,96 @@
 # Shwe Taw Pyan Chi
 
-A frontend prototype for everyday financial records in Myanmar. Supabase Auth and Postgres store account workspaces; new accounts start without transactions or receivables. Users can create and edit transactions, track explicit receivables, review simulated receipt extraction, ask deterministic questions, and check record completeness. Images stay in the browser tab and are discarded after review; no OCR service is used. Forecasting and scheduled payments remain secondary tools. Use synthetic or test information only.
+**A clearer view of your money.**
 
-## Run locally
+Shwe Taw Pyan Chi is a cash-flow workspace for people in Myanmar who handle money across many small, everyday transactions. It brings income, expenses, receivables, and scheduled payments into one place so freelancers, gig workers, online sellers, and small business owners can see where their money stands without maintaining a spreadsheet.
 
-Requires Node 24 LTS and npm.
+It is a product prototype: accounts and records are stored in Supabase, but it is intended for synthetic or test information only.
+
+## What it does
+
+- **Cash-flow overview** — See income, expenses, net movement, receivables, and recent activity for the period you choose. Net movement is a record of what you entered, not a bank balance.
+- **Everyday records** — Add, edit, search, filter, and delete income and expenses in MMK. Track pending payments and due dates, and correct records in place.
+- **Receivables and obligations** — Keep money clients owe you separate from received income. Settling a receivable creates one linked income record, while pending expenses and scheduled payments track money you still owe.
+- **Payment schedules** — Create one-time or monthly payments. Due payments are recorded as unconfirmed until you confirm, correct, or mark them unpaid. Future payments stay out of cash totals.
+- **Receipt and screenshot review** — Preview an image locally and review simulated sample fields before saving. Images stay in the browser tab and are discarded after review.
+- **Roast Mode assistant** — Ask scripted questions about your recorded income, expenses, categories, overdue items, and receivables. Answers cite the records they use and decline unsupported questions.
+- **Credit readiness** — Compare your records with example bank checklists, tick off documents you already have, view an app-only FlowScore, and export a one-page PDF summary.
+- **Private workspace** — Supabase Auth and row-level security keep each user's records separate. A time-zone preference is saved with the workspace.
+
+## Who it is for
+
+Freelancers, gig workers, online sellers, and small business owners in Myanmar who need a simple, honest view of their cash flow but do not need full accounting software. The product is built around one shared workflow rather than separate tools for each type of work.
+
+## Limitations
+
+- **Not suitable for real financial data.** This is a prototype. Use synthetic or test information only.
+- **No live financial connections.** There are no bank, wallet, payment, or accounting integrations. Automatic bank and CSV imports are not supported; only a one-time import of an older browser workspace is offered after sign-in.
+- **Receipt extraction is simulated.** No OCR or AI service is used. Images are never uploaded or stored, and the sample fields must be reviewed and corrected manually.
+- **The assistant is scripted.** It answers a limited set of questions from saved records. It is not a live AI model and does not give financial, legal, or tax advice or predict loan approval.
+- **Credit readiness is not underwriting.** FlowScore is an app-only cash-flow indicator, not a bank score or creditworthiness assessment. The bank requirements are user-provided examples that have not been confirmed by lenders. The PDF is a summary, not a loan application or approval prediction.
+- **Security is not production-grade.** Per-user row-level security is in place, but the project still needs a security review, backups and restore drills, retention and deletion procedures, and incident-response planning before real data can be considered.
+- **English and MMK only.** The interface is English and amounts are recorded in Myanmar kyat.
+
+## Run it locally
+
+### Requirements
+
+- Node.js 24.x (`>=24 <25`) and npm
+- A Supabase project
+
+### 1. Install dependencies
 
 ```sh
 npm ci
+```
+
+### 2. Configure the frontend environment
+
+Copy `.env.example` to `.env.local` and fill in your Supabase project values:
+
+```sh
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
+
+Use only the project URL and public anon/publishable key. Never put a service-role key in a `VITE_` variable or any frontend file.
+
+### 3. Set up Supabase
+
+1. Create a Supabase project and copy its Project URL and public anon key.
+2. Apply the database migration in `supabase/migrations/202610220001_initial_workspace.sql`. Paste it into the Supabase SQL Editor, or link the project and run `supabase db push` with the Supabase CLI.
+3. In Supabase Auth, set the Site URL to `http://127.0.0.1:5173` and add your deployed URL when you have one. If email confirmation is enabled, users must confirm their email before signing in.
+4. Restart Vite after changing environment variables.
+
+For more detail, see [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md).
+
+### 4. Start the app
+
+```sh
 npm run dev
 ```
 
-Configure Supabase using [SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) and `.env.local`, then open the local URL printed by Vite. For production: `npm run build`, then `npm run preview`. Build output is `dist/`; deploy to a static host. Hash URLs work without server rewrite rules. Only the Supabase project URL and public anon key are exposed to the frontend; never use a service-role key there.
+Open the URL printed by Vite; it defaults to `http://127.0.0.1:5173`.
 
-## Verify
+During local development, **Explore with demo data** on the landing or sign-in screen opens a synthetic workspace without Supabase. The preview lasts only for that session and is not included in production builds.
+
+## Build and deploy
 
 ```sh
-npm run format:check
+npm run build
+npm run preview
+```
+
+`npm run preview` serves the production build locally. To deploy, upload the `dist/` directory to any static host and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the build environment. The app uses hash-based URLs, so no server rewrite rules are required.
+
+Before deploying, run:
+
+```sh
 npm run lint
 npm run typecheck
 npm test
 npm run build
 npm run verify:csp
-npx playwright install chromium
-npm run test:e2e
 ```
 
-CI runs these checks, audits high-severity dependency advisories and runs a separate Chromium navigation/responsiveness job. Tests cover financial calculations, transaction and receivable behavior, receipt review, assistant questions, readiness choices, empty initial workspaces, browser import previews, malformed legacy data, and safe text rendering. The CSP check verifies the production HTML policy is stricter than the development policy.
-
-The reviewer-ready Supabase acceptance cases are in [TEST_CASES.md](docs/TEST_CASES.md), including per-user isolation, local import and RLS checks. The prototype walkthrough is in [DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
-
-## Structure and scope
-
-`src/app` composes routing and layout; `src/components` shared UI; `src/features` financial screens and remaining placeholders; `src/store` validated in-memory Zustand state; `src/domain` Zod data contracts and pure balance and schedule lifecycle logic; `src/services` Supabase Auth, typed Postgres access and the legacy import; `e2e` browser checks. React 18, TypeScript, Vite, Tailwind, React Router, Supabase JS, lucide-react, react-i18next, Zustand and Zod power the prototype.
-
-The five primary destinations are Home, Transactions, Add, AI Assistant and Credit Readiness. Add offers manual entry, simulated upload and explicit receivable creation. Receivables stay separate from income until a user marks them paid; settlement creates one linked income record. Settings remains secondary. Insights and payment schedules remain accessible as secondary tools. The assistant answers a bounded set of questions from the signed-in workspace; readiness checks completeness only and does not upload documents or assess creditworthiness. Mobile uses a five-item bottom navigation bar. Finance records are stored in the signed-in user's Supabase workspace; no bank, wallet, OCR, or AI service is connected.
-
-## Product behavior and next work
-
-[Decisions](docs/DECISIONS.md) define a dated initial balance, automatic carry-forward, distinct net movement/recorded balance, one-time and monthly schedules, unconfirmed due-payment assumptions, same-occurrence corrections, single counting and user-controlled duplicate resolution. [Requirements](docs/FinTech_PRD_SRS.md) capture acceptance and the staged roadmap; [implementation guide](codex-master-prompt.md) keeps future work aligned. [Security](docs/SECURITY.md) describes boundaries. The [original diagram](docs/use-case-diagram-v3.png) is unchanged and has documented mismatches.
-
-M1 delivered validated contracts, occurrence and duplicate-review records, the opening-reference selector, injected clock and recovery-safe persistence. M2 delivers opening-balance setup and manual transactions. M3a delivered one-time schedules; M3b adds monthly occurrences, month-end clamping and catch-up with a rolling one-year occurrence window. M4 adds simulated local receipt review. M5 completes dashboard, outstanding views and the 14-day forecast. M6 adds rule-based insights, version-aware duplicate review and grounded chat. M7 delivers record checks, a user-maintained document checklist and optional keyword category suggestions. M8 completes browser coverage for recovery, readiness, schedule cancellation and safe text rendering; the development-only CSP exception is excluded from production builds, and the demo walkthrough is documented. No license has been selected by the owner.
+`verify:csp` checks the production Content Security Policy. For browser tests, install Chromium once with `npx playwright install chromium`, then run `npm run test:e2e`.
