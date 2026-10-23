@@ -29,6 +29,59 @@ export function ReadinessPage() {
   const today = clockForTimeZone(timeZone).today();
   const evaluation = evaluateBankReadiness(data, bankId, today);
   const score = evaluation.flowScore;
+  const nextMissingRequirement = evaluation.requirements.find(
+    (requirement) => requirement.status === 'incomplete',
+  );
+  const nextRequirementMonths = nextMissingRequirement
+    ? Math.max(
+        0,
+        (nextMissingRequirement.proof === 'flow_score' ? 6 : 12) -
+          evaluation.summary.activeMonths,
+      )
+    : 0;
+  const nextRequirementAction = nextMissingRequirement
+    ? nextMissingRequirement.proof === 'self_reported'
+      ? t('readiness.nextDocumentAction', {
+          defaultValue: 'mark available when ready',
+        })
+      : t('readiness.nextHistoryAction', {
+          defaultValue: 'add settled records in {{months}} more {{unit}}',
+          months: nextRequirementMonths,
+          unit: nextRequirementMonths === 1 ? 'month' : 'months',
+        })
+    : null;
+  const scoreComponents = (
+    [
+      [
+        'historyCoverage',
+        t('readiness.components.historyCoverage', {
+          defaultValue: 'History coverage',
+        }),
+      ],
+      [
+        'incomeConsistency',
+        t('readiness.components.incomeConsistency', {
+          defaultValue: 'Monthly income consistency',
+        }),
+      ],
+      [
+        'netCashFlowStability',
+        t('readiness.components.netCashFlowStability', {
+          defaultValue: 'Net cash-flow stability',
+        }),
+      ],
+      [
+        'reviewedReceiptEvidence',
+        t('readiness.components.reviewedReceiptEvidence', {
+          defaultValue: 'Reviewed receipt evidence',
+        }),
+      ],
+    ] as const
+  ).map(([key, label]) => ({
+    key,
+    label,
+    available: score.score !== null || key === 'historyCoverage',
+  }));
 
   return (
     <>
@@ -146,6 +199,13 @@ export function ReadinessPage() {
             style={{ width: `${evaluation.completionPercent}%` }}
           />
         </div>
+
+        {nextMissingRequirement && nextRequirementAction && (
+          <p className="mt-3 rounded-xl bg-canvas px-3 py-2 text-sm text-muted" role="status" aria-live="polite">
+            <span className="font-semibold text-ink">{t('readiness.nextRequirement', { defaultValue: 'Next' })}:</span>{' '}
+            {nextMissingRequirement.title} — {nextRequirementAction}
+          </p>
+        )}
 
         <ul className="mt-5 divide-y divide-[#e5eaf1]">
           {evaluation.requirements.map((requirement, index) => {
@@ -282,45 +342,18 @@ export function ReadinessPage() {
           >
             {t('readiness.scoreNeedsMonths', {
               defaultValue:
-                'A FlowScore appears after settled records span at least 6 distinct months. Current coverage: {{active}} of 12 months.',
+                'FlowScore needs 6 active months ({{active}}/6); only history coverage is shown until then.',
               active: score.activeMonths,
             })}
           </p>
         )}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {(
-            [
-              [
-                'historyCoverage',
-                t('readiness.components.historyCoverage', {
-                  defaultValue: 'History coverage',
-                }),
-              ],
-              [
-                'incomeConsistency',
-                t('readiness.components.incomeConsistency', {
-                  defaultValue: 'Monthly income consistency',
-                }),
-              ],
-              [
-                'netCashFlowStability',
-                t('readiness.components.netCashFlowStability', {
-                  defaultValue: 'Net cash-flow stability',
-                }),
-              ],
-              [
-                'reviewedReceiptEvidence',
-                t('readiness.components.reviewedReceiptEvidence', {
-                  defaultValue: 'Reviewed receipt evidence',
-                }),
-              ],
-            ] as const
-          ).map(([key, label]) => (
+          {scoreComponents.map(({ key, label, available }) => (
             <div key={key}>
               <div className="mb-1 flex justify-between gap-3 text-sm">
                 <span>{label}</span>
                 <span className="tabular-nums text-muted">
-                  {score.components[key]}%
+                  {available ? `${score.components[key]}%` : '—'}
                 </span>
               </div>
               <div
@@ -329,7 +362,7 @@ export function ReadinessPage() {
               >
                 <div
                   className="h-full rounded-full bg-accent"
-                  style={{ width: `${score.components[key]}%` }}
+                  style={{ width: `${available ? score.components[key] : 0}%` }}
                 />
               </div>
             </div>

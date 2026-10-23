@@ -332,6 +332,9 @@
     "stepTwo": "2. Review checklist",
     "checklistReady": "checklist ready",
     "checklistProgress": "Bank checklist completion",
+    "nextRequirement": "Next",
+    "nextDocumentAction": "mark available when ready",
+    "nextHistoryAction": "add settled records in {{months}} more {{unit}}",
     "userReported": "You marked this available",
     "appAlternativeAvailable": "App-generated alternative available",
     "incomplete": "Incomplete",
@@ -344,7 +347,7 @@
     "flowScoreHelp": "A transparent cash-flow indicator based on your last 12 months of settled records. It is not a bank score, creditworthiness assessment, or approval likelihood.",
     "scoreUnavailable": "Not enough history",
     "outOfHundred": "out of 100",
-    "scoreNeedsMonths": "A FlowScore appears after settled records span at least 6 distinct months. Current coverage: {{active}} of 12 months.",
+    "scoreNeedsMonths": "FlowScore needs 6 active months ({{active}}/6); only history coverage is shown until then.",
     "components": {
       "historyCoverage": "History coverage",
       "incomeConsistency": "Monthly income consistency",
