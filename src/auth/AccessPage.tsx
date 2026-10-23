@@ -22,6 +22,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthProvider';
 import { BrandMark } from '../components/BrandMark';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 const cards = [
   {
@@ -80,6 +81,15 @@ const cards = [
   },
 ];
 
+const landingHeroCopy = {
+  eyebrow: 'Your finances, in one place',
+  title: 'Bring your money together.',
+  description:
+    'Make sense of every little spend and every bit of income, all in one calm place.',
+  getStarted: 'Get started',
+  privacy: 'A personal space for your financial records',
+} as const;
+
 export function AccessPage() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -109,29 +119,25 @@ export function AccessPage() {
           </span>
           <strong>{t('brand')}</strong>
         </Link>
-        <Link
-          className="access-nav-link"
-          to={mode === 'login' ? '/register' : '/login'}
-        >
-          {mode === 'login' ? 'Create account' : 'Sign in'}
-          <ArrowRight size={16} aria-hidden="true" />
-        </Link>
+        <div className="access-nav-actions">
+          <LanguageSwitcher compact />
+          <Link
+            className="access-nav-link"
+            to={mode === 'login' ? '/register' : '/login'}
+          >
+            {mode === 'login' ? t('auth.createAccount') : t('auth.signIn')}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </header>
       <section className="access-hero" aria-hidden={active}>
         <p className="access-eyebrow">
           <span />
-          Your finances, in one place
+          {landingHeroCopy.eyebrow}
         </p>
-        <h1>
-          Bring your
-          <br />
-          money
-          <br />
-          <em>together.</em>
-        </h1>
+        <h1>{landingHeroCopy.title}</h1>
         <p className="access-hero-description">
-          Make sense of every little spend and every bit of income, all in one
-          calm place.
+          {landingHeroCopy.description}
         </p>
         <button
           type="button"
@@ -139,12 +145,12 @@ export function AccessPage() {
           disabled={active}
           onClick={() => navigate('/register')}
         >
-          Get started
+          {landingHeroCopy.getStarted}
           <ArrowRight size={20} aria-hidden="true" />
         </button>
         <p className="access-privacy">
-          <LockKeyhole size={15} aria-hidden="true" />A personal space for your
-          financial records
+          <LockKeyhole size={15} aria-hidden="true" />
+          {landingHeroCopy.privacy}
         </p>
       </section>
       <div className="access-receipts" aria-hidden="true">
@@ -180,9 +186,9 @@ export function AccessPage() {
         </span>
         <h2>{t('brand')}</h2>
         <p>
-          Your records.
+          {t('auth.revealLineOne')}
           <br />
-          One clear picture.
+          {t('auth.revealLineTwo')}
         </p>
       </section>
       {active ? (
@@ -193,7 +199,7 @@ export function AccessPage() {
         >
           <Link to="/" className="access-back">
             <ArrowLeft size={16} aria-hidden="true" />
-            Back
+            {t('auth.back')}
           </Link>
           <AuthForm mode={mode} destination={destination} />
         </section>
@@ -204,8 +210,8 @@ export function AccessPage() {
         </p>
       ) : null}
       <footer className="access-footer">
-        <span>Small steps. A clearer picture.</span>
-        <span>Built for everyday money</span>
+        <span>{t('auth.footerLineOne')}</span>
+        <span>{t('auth.footerLineTwo')}</span>
       </footer>
     </main>
   );
@@ -218,6 +224,7 @@ function AuthForm({
   mode: 'register' | 'login';
   destination: string;
 }) {
+  const { t } = useTranslation();
   const auth = useAuth()!;
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -240,7 +247,7 @@ function AuthForm({
     if (submitting) return;
     setError('');
     if (mode === 'register' && password !== confirm) {
-      setError('The passwords do not match.');
+    setError(t('auth.passwordMismatch'));
       return;
     }
     setSubmitting(true);
@@ -251,7 +258,7 @@ function AuthForm({
       navigate(destination, { replace: true });
     } catch (failure) {
       setError(
-        failure instanceof Error ? failure.message : 'Please try again.',
+        failure instanceof Error ? failure.message : t('auth.tryAgain'),
       );
     } finally {
       setSubmitting(false);
@@ -259,31 +266,31 @@ function AuthForm({
   }
   return (
     <>
-      <p className="access-form-eyebrow">YOUR EVERYDAY MONEY COMPANION</p>
-      <h1>{mode === 'register' ? 'A clearer start.' : 'Welcome back.'}</h1>
+      <p className="access-form-eyebrow">{t('auth.eyebrow')}</p>
+      <h1>{mode === 'register' ? t('auth.clearerStart') : t('auth.welcomeBack')}</h1>
       <p className="access-form-description">
         {mode === 'register'
-          ? 'Create your account and bring your records together.'
-          : 'Sign in to pick up where you left off.'}
+          ? t('auth.createDescription')
+          : t('auth.signInDescription')}
       </p>
       <form className="access-form" onSubmit={submit}>
         {mode === 'register' ? (
           <label>
-            Your name
+            {t('auth.yourName')}
             <input
               ref={inputRef}
               autoComplete="name"
               value={name}
               maxLength={100}
               onChange={(event) => setName(event.target.value)}
-              placeholder="How should we call you?"
+              placeholder={t('auth.namePlaceholder')}
               required
               disabled={submitting}
             />
           </label>
         ) : null}
         <label>
-          Email address
+          {t('auth.email')}
           <input
             ref={mode === 'login' ? inputRef : undefined}
             type="email"
@@ -300,7 +307,7 @@ function AuthForm({
           />
         </label>
         <label>
-          Password
+          {t('auth.password')}
           <div className="access-password-wrap">
             <input
               type={visible ? 'text' : 'password'}
@@ -313,8 +320,8 @@ function AuthForm({
               onChange={(event) => setPassword(event.target.value)}
               placeholder={
                 mode === 'register'
-                  ? 'At least 8 characters'
-                  : 'Enter your password'
+                  ? t('auth.passwordCreatePlaceholder')
+                  : t('auth.passwordPlaceholder')
               }
               aria-describedby={
                 mode === 'register' ? 'password-help' : undefined
@@ -324,7 +331,7 @@ function AuthForm({
             />
             <button
               type="button"
-              aria-label={visible ? 'Hide password' : 'Show password'}
+              aria-label={visible ? t('auth.hidePassword') : t('auth.showPassword')}
               aria-pressed={visible}
               onClick={() => setVisible((value) => !value)}
             >
@@ -339,17 +346,17 @@ function AuthForm({
         {mode === 'register' ? (
           <>
             <p id="password-help" className="access-password-help">
-              Use at least 8 characters. A longer phrase works well.
+              {t('auth.passwordHelp')}
             </p>
             <label>
-              Confirm password
+              {t('auth.confirmPassword')}
               <input
                 type={visible ? 'text' : 'password'}
                 autoComplete="new-password"
                 maxLength={128}
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
-                placeholder="Enter it once more"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 required
                 disabled={submitting}
               />
@@ -364,23 +371,23 @@ function AuthForm({
         <button className="access-submit" disabled={submitting}>
           {submitting
             ? mode === 'register'
-              ? 'Creating account…'
-              : 'Signing in…'
+              ? t('auth.creating')
+              : t('auth.signingIn')
             : mode === 'register'
-              ? 'Create account'
-              : 'Sign in'}
+              ? t('auth.createAccount')
+              : t('auth.signIn')}
           <ArrowRight size={18} aria-hidden="true" />
         </button>
       </form>
       <p className="access-form-switch">
-        {mode === 'register' ? 'Already have an account?' : 'New here?'}{' '}
+        {mode === 'register' ? t('auth.alreadyHaveAccount') : t('auth.newHere')}{' '}
         <Link to={mode === 'register' ? '/login' : '/register'}>
-          {mode === 'register' ? 'Sign in' : 'Create an account'}
+          {mode === 'register' ? t('auth.signIn') : t('auth.createAccount')}
         </Link>
       </p>
       <p className="access-form-privacy">
         <LockKeyhole size={13} aria-hidden="true" />
-        Your account keeps your workspace separate.
+        {t('auth.accountPrivacy')}
       </p>
     </>
   );

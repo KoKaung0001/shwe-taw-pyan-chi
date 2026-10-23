@@ -39,6 +39,7 @@ import { PaymentsLayout } from '../features/PaymentsLayout';
 import { SlidingSelector } from '../components/SlidingSelector';
 import { RouteFade, useAnimatedVisibility } from '../components/Motion';
 import { BrandMark } from '../components/BrandMark';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 function routeName(pathname: string, t: TFunction) {
   if (
@@ -342,6 +343,7 @@ export function App() {
               <span>{t('brand')}</span>
             </Link>
             <div className="topbar-actions">
+              <LanguageSwitcher compact />
               <AccountControls />
             </div>
           </header>

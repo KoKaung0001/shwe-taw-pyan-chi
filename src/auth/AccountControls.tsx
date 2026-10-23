@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, UserRound } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { AnimatedDisclosure } from '../components/Motion';
+import { useTranslation } from 'react-i18next';
 
 export function AccountControls() {
+  const { t } = useTranslation();
   const auth = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -22,17 +24,17 @@ export function AccountControls() {
           {auth.user.name}
           <small>
             {auth.sync === 'saving'
-              ? 'Saving…'
+              ? t('account.saving')
               : auth.sync === 'error'
-                ? 'Sync needs attention'
-                : 'Saved'}
+                ? t('account.syncNeedsAttention')
+                : t('account.saved')}
           </small>
         </span>
       </Link>
       <button
         type="button"
         className="account-sign-out"
-        aria-label="Sign out"
+        aria-label={t('account.signOut')}
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -44,7 +46,7 @@ export function AccountControls() {
               setError(
                 failure instanceof Error
                   ? failure.message
-                  : 'Could not sign out.',
+                  : t('account.couldNotSignOut'),
               ),
             )
             .finally(() => setBusy(false));
@@ -62,15 +64,16 @@ export function AccountControls() {
 }
 
 export function AccountNotices() {
+  const { t } = useTranslation();
   const auth = useAuth();
   if (!auth?.user) return null;
   return (
     <>
       {auth.canImport ? (
         <div className="account-import-notice">
-          <span>A previous local workspace is available in this browser.</span>
+          <span>{t('account.previousWorkspace')}</span>
           <button type="button" onClick={auth.importLocalRecords}>
-            Import into this account
+            {t('account.import')}
           </button>
         </div>
       ) : null}
@@ -78,13 +81,13 @@ export function AccountNotices() {
         <div className="account-sync-notice" role="status">
           <span>
             {auth.error ||
-              'Your changes are kept in this browser but have not synced.'}
+              t('account.syncError')}
           </span>
           <button
             type="button"
             onClick={() => void auth.retrySync().catch(() => undefined)}
           >
-            Retry sync
+            {t('account.retry')}
           </button>
         </div>
       ) : null}
@@ -93,6 +96,7 @@ export function AccountNotices() {
 }
 
 export function AccountSettings() {
+  const { t } = useTranslation();
   const auth = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -105,7 +109,7 @@ export function AccountSettings() {
       !auth ||
       busy ||
       !window.confirm(
-        'Permanently delete your account and its saved financial records? This cannot be undone.',
+        t('account.deleteConfirm'),
       )
     )
       return;
@@ -119,7 +123,7 @@ export function AccountSettings() {
       setError(
         failure instanceof Error
           ? failure.message
-          : 'Could not delete the account.',
+          : t('account.couldNotDelete'),
       );
     } finally {
       setBusy(false);
@@ -127,21 +131,19 @@ export function AccountSettings() {
   }
   return (
     <section className="surface-card account-settings">
-      <h2>Your account</h2>
+      <h2>{t('account.yourAccount')}</h2>
       <p className="account-settings-name">{auth.user.name}</p>
       <p>{auth.user.email}</p>
       <p className="account-storage-help">
-        Your records are saved to your account on this server. Receipt images
-        stay on your device.
+        {t('account.storageHelp')}
       </p>
-      <AnimatedDisclosure title="Delete account">
+      <AnimatedDisclosure title={t('account.deleteAccount')}>
         <form className="account-delete-form" onSubmit={remove}>
           <p>
-            This permanently removes your registered account, sessions and saved
-            records from this server.
+            {t('account.deleteWarning')}
           </p>
           <label>
-            Current password
+            {t('account.currentPassword')}
             <input
               type="password"
               autoComplete="current-password"
@@ -153,7 +155,7 @@ export function AccountSettings() {
           </label>
           {error ? <p role="alert">{error}</p> : null}
           <button type="submit" disabled={busy}>
-            {busy ? 'Deleting…' : 'Delete my account'}
+            {busy ? t('account.deleting') : t('account.deleteMyAccount')}
           </button>
         </form>
       </AnimatedDisclosure>

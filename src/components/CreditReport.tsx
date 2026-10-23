@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CreditReadiness } from '../domain/creditReadiness';
 
 const money = (value: number) =>
@@ -12,65 +13,65 @@ export const CreditReport = forwardRef<
     businessName: string;
   }
 >(function CreditReport({ summary: s, applicantName, businessName }, ref) {
+  const { t } = useTranslation();
+  const bankName = t(`banks.${s.bank.id}.name`, { defaultValue: s.bank.name });
   return (
     <div ref={ref} className="credit-report" aria-hidden="true">
       <header className="credit-report-header">
         <span>SHWE TAW PYAN CHI</span>
-        <span>Prepared {s.today}</span>
+        <span>{t('report.prepared', { date: s.today })}</span>
       </header>
-      <h1>FlowCredit Readiness Report</h1>
+      <h1>{t('report.title')}</h1>
       <p className="credit-report-subtitle">
-        Supporting income evidence • {s.bank.name}
+        {t('report.subtitle', { bank: bankName })}
       </p>
       <div className="credit-report-identity">
         <div>
-          <span>APPLICANT</span>
-          <strong>{applicantName.trim() || 'Not provided'}</strong>
+          <span>{t('report.applicant')}</span>
+          <strong>{applicantName.trim() || t('report.notProvided')}</strong>
         </div>
         <div>
-          <span>BUSINESS</span>
-          <strong>{businessName.trim() || 'Not provided'}</strong>
+          <span>{t('report.business')}</span>
+          <strong>{businessName.trim() || t('report.notProvided')}</strong>
         </div>
       </div>
       <section className="credit-report-progress">
         <div>
-          <span>DOCUMENT PREPARATION</span>
+          <span>{t('report.documentPreparation')}</span>
           <strong>{s.percent}%</strong>
         </div>
         <p>
-          {s.completed} of 6 groups prepared. Declared documents are
-          self-reported; supporting summaries are generated from saved records.
-          This is not a credit score.
+          {t('report.groupsPrepared', { completed: s.completed })}
         </p>
       </section>
       <div className="credit-report-section-heading">
-        <h2>Recorded cash flow</h2>
+        <h2>{t('report.recordedCashFlow')}</h2>
         <span>
           {s.startDate} to {s.today} • MMK
         </span>
       </div>
       <div className="credit-report-metrics">
         <div>
-          <span>Income</span>
+          <span>{t('report.income')}</span>
           <strong>{money(s.income)}</strong>
         </div>
         <div>
-          <span>Expenses</span>
+          <span>{t('report.expenses')}</span>
           <strong>{money(s.expenses)}</strong>
         </div>
         <div>
-          <span>Net movement</span>
+          <span>{t('report.netMovement')}</span>
           <strong>{money(s.net)}</strong>
         </div>
       </div>
       <table className="credit-report-table">
         <thead>
           <tr>
-            <th>Month</th>
-            <th>Records</th>
-            <th>Income (MMK)</th>
-            <th>Expenses (MMK)</th>
-            <th>Net (MMK)</th>
+            <th>{t('report.month')}</th>
+            <th>{t('report.records')}</th>
+            <th>{t('report.incomeMmk')}</th>
+            <th>{t('report.expensesMmk')}</th>
+            <th>{t('report.netMmk')}</th>
           </tr>
         </thead>
         <tbody>
@@ -86,62 +87,70 @@ export const CreditReport = forwardRef<
         </tbody>
       </table>
       <div className="credit-report-section-heading">
-        <h2>{s.bank.name} preparation checklist</h2>
-        <span>Six summary groups</span>
+        <h2>
+          {bankName} {t('report.preparationChecklist')}
+        </h2>
+        <span>{t('report.summaryGroups')}</span>
       </div>
       <table className="credit-report-checklist">
         <tbody>
-          {s.rows.map((row) => (
+          {s.rows.map((row) => {
+            const title = t(`banks.${s.bank.id}.requirements.${row.id}.title`, {
+              defaultValue: row.title,
+            });
+            return (
             <tr key={row.id}>
-              <td>{row.title}</td>
+              <td>{title}</td>
               <td>
                 {row.declared
-                  ? 'Available (self-reported)'
+                  ? t('report.availableSelfReported')
                   : row.supporting
-                    ? 'Supporting summary ready'
+                    ? t('report.supportingReady')
                     : row.completion > 0
-                      ? `Incomplete (${Math.round(row.completion * 100)}% coverage)`
-                      : 'Incomplete'}
+                      ? t('report.incompleteCoverage', { percent: Math.round(row.completion * 100) })
+                      : t('report.incomplete')}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       <section className="credit-report-evidence">
-        <h2>Evidence & coverage</h2>
+        <h2>{t('report.evidenceCoverage')}</h2>
         <p>
-          {s.recordCount} settled records: {s.reviewedImageCount} reviewed
-          receipt / screenshot records, {s.manualCount} manual records and{' '}
-          {s.recurringCount} confirmed schedule records. Records appear in{' '}
-          {s.recentMonths} of the 12 reporting months.
+          {t('report.settledEvidence', {
+            records: s.recordCount,
+            reviewed: s.reviewedImageCount,
+            manual: s.manualCount,
+            recurring: s.recurringCount,
+            months: s.recentMonths,
+          })}
         </p>
         <p>
-          {s.bank.historyMonths}-month financial history: {s.coveredMonths}{' '}
-          months with records. {s.pendingCount} pending and {s.unconfirmedCount}{' '}
-          unconfirmed records excluded from totals.
+          {t('report.historyEvidence', {
+            history: s.bank.historyMonths,
+            covered: s.coveredMonths,
+            pending: s.pendingCount,
+            unconfirmed: s.unconfirmedCount,
+          })}
           {s.duplicateCount > 0
-            ? ` ${s.duplicateCount} possible duplicate pairs need review.`
+            ? t('report.duplicates', { count: s.duplicateCount })
             : ''}
         </p>
       </section>
       <footer className="credit-report-footer">
         <strong>
-          User-prepared supporting summary. No audit, bank verification or
-          income certification.
+          {t('report.footerWarning')}
         </strong>
         <p>
-          Zero rows indicate no recorded activity, not proof of no activity.
-          Month coverage does not establish complete records. This report does
-          not replace bank-issued statements, audited accounts or original
-          vouchers. Acceptance and additional requirements are decided by the
-          bank.
+          {t('report.footerNote')}
         </p>
         <p>
           {s.bank.id === 'abank'
-            ? 'A Bank checklist: team draft; confirm requirements with the branch.'
+            ? t('report.aBankReference')
             : `Checklist reference: ${s.bank.source}`}
         </p>
-        <span>Prepared locally from saved app records • 1 / 1</span>
+        <span>{t('report.preparedLocally')}</span>
       </footer>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { UserRound, Mail, ArrowLeft, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthProvider';
 
 export function ProfilePage() {
@@ -10,6 +11,7 @@ export function ProfilePage() {
 }
 
 function ProfileForm() {
+  const { t } = useTranslation();
   const auth = useAuth()!;
   const [name, setName] = useState(auth.user!.name);
   const [email, setEmail] = useState(auth.user!.email);
@@ -39,7 +41,7 @@ function ProfileForm() {
       setError(
         failure instanceof Error
           ? failure.message
-          : 'Your profile could not be saved. Please try again.',
+          : t('profileForm.saveError'),
       );
     } finally {
       setBusy(false);
@@ -49,10 +51,10 @@ function ProfileForm() {
     <div className="page-stack profile-page">
       <header className="page-heading">
         <Link className="profile-back" to="/more">
-          <ArrowLeft size={17} aria-hidden="true" /> More
+          <ArrowLeft size={17} aria-hidden="true" /> {t('profileForm.back')}
         </Link>
-        <h1 tabIndex={-1}>My profile</h1>
-        <p>Keep your personal information up to date.</p>
+        <h1 tabIndex={-1}>{t('profileForm.title')}</h1>
+        <p>{t('profileForm.description')}</p>
       </header>
       <section className="surface-card profile-card">
         <div className="profile-summary">
@@ -71,7 +73,7 @@ function ProfileForm() {
         >
           <label htmlFor="profile-name">
             <span>
-              <UserRound size={17} aria-hidden="true" /> Full name
+              <UserRound size={17} aria-hidden="true" /> {t('profileForm.fullName')}
             </span>
             <input
               id="profile-name"
@@ -86,7 +88,7 @@ function ProfileForm() {
           </label>
           <label htmlFor="profile-email">
             <span>
-              <Mail size={17} aria-hidden="true" /> Email address
+              <Mail size={17} aria-hidden="true" /> {t('profileForm.email')}
             </span>
             <input
               id="profile-email"
@@ -102,7 +104,7 @@ function ProfileForm() {
           </label>
           {emailChanged && (
             <label htmlFor="profile-password">
-              <span>Current password</span>
+              <span>{t('profileForm.currentPassword')}</span>
               <input
                 id="profile-password"
                 name="currentPassword"
@@ -116,8 +118,7 @@ function ProfileForm() {
                 aria-describedby="profile-email-help"
               />
               <small id="profile-email-help">
-                Confirm your password to change your sign-in email. Other
-                sessions will be signed out.
+                {t('profileForm.emailHelp')}
               </small>
             </label>
           )}
@@ -128,8 +129,7 @@ function ProfileForm() {
           )}
           {saved && (
             <p className="profile-saved" role="status">
-              <Check size={17} aria-hidden="true" /> Your profile has been
-              saved.
+              <Check size={17} aria-hidden="true" /> {t('profileForm.saved')}
             </p>
           )}
           <div className="profile-form-actions">
@@ -138,7 +138,7 @@ function ProfileForm() {
               type="submit"
               disabled={busy || !changed}
             >
-              {busy ? 'Saving…' : 'Save changes'}
+              {busy ? t('profileForm.saving') : t('profileForm.save')}
             </button>
           </div>
         </form>

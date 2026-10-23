@@ -3,8 +3,10 @@ import { App } from '../app/App';
 import { AccessPage } from './AccessPage';
 import { BrandMark } from '../components/BrandMark';
 import { useAuth } from './AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export function AuthGate() {
+  const { t } = useTranslation();
   const auth = useAuth()!;
   const location = useLocation();
   if (auth.loading)
@@ -13,7 +15,7 @@ export function AuthGate() {
         <span>
           <BrandMark />
         </span>
-        <p>Opening your workspace…</p>
+        <p>{t('account.openingWorkspace')}</p>
       </main>
     );
   if (!auth.user) return <AccessPage />;

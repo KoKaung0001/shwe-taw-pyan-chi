@@ -342,6 +342,37 @@
   align-items: center;
   gap: 0.7rem;
 }
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #dce5f0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgb(30 55 90 / 0.04);
+}
+.language-switcher button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #647991;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.language-switcher button.is-active {
+  background: #0866e8;
+  color: #fff;
+}
+.language-switcher button:hover:not(.is-active) {
+  background: #eef5ff;
+  color: #0866e8;
+}
+.access-nav-actions { display: flex; align-items: center; gap: 10px; }
+.access-nav-actions .language-switcher { background: #ffffffb5; }
 .demo-badge {
   display: inline-flex;
   align-items: center;
@@ -2294,6 +2325,32 @@ body:has(.transaction-composer-page) .quick-add-backdrop { display: none !import
 .access-form-switch a { margin-left: 4px; color: #0866e8; font-weight: 650; }
 .access-form-privacy { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 19px 0 0; color: #8190a3; font-size: 0.62rem; }
 .access-footer { position: absolute; z-index: 3; right: 7%; bottom: 28px; left: 7%; display: flex; justify-content: space-between; gap: 20px; color: #8090a5; font-size: 0.7rem; font-weight: 550; }
+
+/* Burmese landing-page typography: keep Myanmar combining marks clear and vertically balanced. */
+:lang(my) .access-stage,
+:lang(my) .access-stage button,
+:lang(my) .access-stage input {
+  font-family: 'Noto Sans Myanmar', 'Padauk', 'Myanmar Text', sans-serif;
+  font-feature-settings: "zg" 0;
+}
+:lang(my) .access-stage .access-hero {
+  font-family: Inter, Arial, sans-serif;
+  font-feature-settings: normal;
+}
+:lang(my) .access-stage .access-hero button {
+  font-family: Inter, Arial, sans-serif;
+  font-feature-settings: normal;
+}
+:lang(my) .access-stage .access-brand-reveal,
+:lang(my) .access-stage .access-form-panel {
+  font-family: 'Noto Sans Myanmar', 'Padauk', 'Myanmar Text', sans-serif;
+  font-feature-settings: "zg" 0;
+}
+:lang(my) .access-stage .access-brand-reveal h2,
+:lang(my) .access-stage .access-form-panel h1 {
+  line-height: 1.55;
+  letter-spacing: 0;
+}
 .access-connection-note { position: relative; z-index: 4; max-width: 480px; margin: -100px 0 100px 7%; padding: 12px 15px; border-radius: 11px; background: #fff; color: #6b7e95; font-size: 0.73rem; }
 .account-loading { display: grid; place-content: center; justify-items: center; gap: 18px; min-height: 100svh; background: #f7f9ff; color: #647991; font-size: 0.85rem; }
 .account-loading > span { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; background: #0866e8; color: #fff; }
